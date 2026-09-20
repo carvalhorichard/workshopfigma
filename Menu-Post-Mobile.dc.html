@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Menu da publicação — Mobile</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+:root {
+  --canvas: #19181B;
+  --canvas-deep: #121114;
+  --surface: #242326;
+  --elevated: #2C2B2F;
+  --border: #37363A;
+  --border-strong: #4A494E;
+  --text-1: #F1F1F2;
+  --text-2: #D3D3D3;
+  --text-2-dim: #BDBDBF;
+  --text-3: #A2A2A2;
+  --text-4: #858487;
+  --text-5: #626166;
+  --on-brand: #FFFFFF;
+  --brand-100: #DAD7FF;
+  --brand-200: #B6B1FF;
+  --brand-300: #938CFF;
+  --brand-400: #756BFF;
+  --brand-500: #6155F5;
+  --success: #4CCB88;
+  --error: #EF5B67;
+}
+body { margin: 0; font-family: Inter, sans-serif; background: var(--canvas); -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+a { color: var(--brand-200); text-decoration: none; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--brand-300); outline-offset: 2px; }
+img { max-width: 100%; display: block; }
+.one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row:hover { background: var(--elevated); }
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 600px; box-sizing: border-box; background: var(--canvas); overflow: hidden;">
+
+  <img src="./assets/aa13cde3e83f53040acbe5eea59bf935.jpg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+  <div style="position: absolute; inset: 0; background: rgba(18, 17, 20, 0.82);"></div>
+
+  <div role="dialog" aria-modal="true" aria-labelledby="menu-titulo" style="position: absolute; left: 0; right: 0; bottom: 0; border-radius: 20px 20px 0 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; flex-direction: column;">
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 10px 16px 12px; flex-shrink: 0;">
+      <span aria-hidden="true" style="display: block; width: 40px; height: 4px; border-radius: 999px; background: var(--border-strong);"></span>
+      <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+        <h1 id="menu-titulo" style="margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text-1); min-width: 0;">Publicação de @elina321</h1>
+        <div style="flex-grow: 1;"></div>
+        <a href="Post-Detalhe-Mobile.dc.html" aria-label="Fechar" style="width: 44px; height: 44px; margin-right: -12px; border-radius: 999px; color: var(--text-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </a>
+      </div>
+    </div>
+
+    <ul style="margin: 0; padding: 4px 8px; list-style: none; display: flex; flex-direction: column; gap: 2px;">
+      <sc-for list="{{ acoes }}" as="a" hint-placeholder-count="4">
+        <li>
+          <button type="button" class="row" style="width: 100%; display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 8px 12px; border-radius: 12px; border: 0; background: transparent; font-family: inherit; text-align: left; cursor: pointer;">
+            <span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: var(--text-3); flex-shrink: 0;" aria-hidden="true">
+              <sc-if value="{{ a.isSalvar }}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"></path></svg></sc-if>
+              <sc-if value="{{ a.isInteresse }}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 8.5 15.5 15.5"></path></svg></sc-if>
+              <sc-if value="{{ a.isSeguir }}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20v-1.6a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"></path><circle cx="9.5" cy="7.5" r="3.4"></circle><path d="M22 11h-6"></path></svg></sc-if>
+              <sc-if value="{{ a.isLink }}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13.5a4 4 0 0 0 5.7 0l2.6-2.6a4 4 0 1 0-5.7-5.7l-1.3 1.3"></path><path d="M14 10.5a4 4 0 0 0-5.7 0l-2.6 2.6a4 4 0 1 0 5.7 5.7l1.3-1.3"></path></svg></sc-if>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1;">
+              <span class="one-line" style="font-size: 14px; font-weight: 500; line-height: 1.45; color: var(--text-2);">{{ a.label }}</span>
+              <sc-if value="{{ a.ajuda }}" hint-placeholder-val="{{ true }}">
+                <span style="font-size: 12px; line-height: 1.4; color: var(--text-4); overflow-wrap: anywhere;">{{ a.ajuda }}</span>
+              </sc-if>
+            </span>
+          </button>
+        </li>
+      </sc-for>
+    </ul>
+
+    <span style="display: block; height: 1px; background: var(--elevated); margin: 8px 16px;"></span>
+
+    <ul style="margin: 0; padding: 0 8px 20px; list-style: none;">
+      <li>
+        <button type="button" class="row" style="width: 100%; display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 8px 12px; border-radius: 12px; border: 0; background: transparent; font-family: inherit; text-align: left; cursor: pointer;">
+          <span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: var(--error); flex-shrink: 0;" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4.5h13l-2.4 4 2.4 4H5"></path></svg>
+          </span>
+          <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1;">
+            <span class="one-line" style="font-size: 14px; font-weight: 600; line-height: 1.45; color: var(--error);">Denunciar publicação</span>
+            <span style="font-size: 12px; line-height: 1.4; color: var(--text-4);">A pessoa não fica sabendo quem denunciou.</span>
+          </span>
+        </button>
+      </li>
+    </ul>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#6155F5","options":["#6155F5","#756BFF","#558DF5"],"section":"Tema"},"$preview":{"width":390,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const flags = { isSalvar: false, isInteresse: false, isSeguir: false, isLink: false };
+    const acao = (label, ajuda, key) => Object.assign({ label: label, ajuda: ajuda }, flags, (function () { const o = {}; o[key] = true; return o; })());
+    return {
+      accent: this.props.accent ?? '#6155F5',
+      acoes: [
+        acao('Salvar publicação', 'Vai para a aba Salvos do seu perfil.', 'isSalvar'),
+        acao('Não tenho interesse', 'Mostramos menos publicações como esta.', 'isInteresse'),
+        acao('Deixar de seguir @elina321', '', 'isSeguir'),
+        acao('Copiar link', '', 'isLink')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

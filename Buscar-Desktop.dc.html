@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Buscar — Desktop</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+:root {
+  --canvas: #19181B;
+  --canvas-deep: #121114;
+  --surface: #242326;
+  --elevated: #2C2B2F;
+  --border: #37363A;
+  --border-strong: #4A494E;
+  --text-1: #F1F1F2;
+  --text-2: #D3D3D3;
+  --text-2-dim: #BDBDBF;
+  --text-3: #A2A2A2;
+  --text-4: #858487;
+  --text-5: #626166;
+  --on-brand: #FFFFFF;
+  --brand-100: #DAD7FF;
+  --brand-200: #B6B1FF;
+  --brand-300: #938CFF;
+  --brand-400: #756BFF;
+  --brand-500: #6155F5;
+  --success: #4CCB88;
+  --error: #EF5B67;
+}
+body { margin: 0; font-family: Inter, sans-serif; background: var(--canvas); -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+a { color: var(--brand-200); text-decoration: none; }
+a:hover { color: var(--brand-100); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--brand-300); outline-offset: 2px; }
+input::placeholder { color: var(--text-4); }
+img { max-width: 100%; display: block; }
+.one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-item:hover { background: var(--surface); color: var(--text-1); }
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; background: var(--canvas); padding: 0 0 32px; display: flex; flex-direction: column; gap: 24px;">
+
+  <header style="display: flex; align-items: center; gap: 24px; height: 80px; padding: 0 32px; flex-shrink: 0;">
+    <a href="Home-Desktop.dc.html" style="font-size: 24px; line-height: 1.2; font-weight: 700; color: var(--text-1); letter-spacing: -0.3px; flex-shrink: 0;">Musique</a>
+
+    <div style="position: relative; flex-grow: 1; max-width: 560px; min-width: 0;">
+      <label for="busca" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;">Buscar</label>
+      <input id="busca" type="search" value="violão" placeholder="O que deseja fazer de bom hoje?" style="width: 100%; min-width: 0; height: 48px; border-radius: 12px; border: 1px solid {{ accent }}; background: var(--surface); padding: 0 48px 0 16px; font-family: inherit; font-size: 14px; color: var(--text-1);">
+      <button type="button" aria-label="Limpar busca" style="position: absolute; top: 2px; right: 2px; width: 44px; height: 44px; border-radius: 999px; border: 0; background: transparent; color: var(--text-3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+
+    <div style="flex-grow: 1;"></div>
+
+    <button type="button" aria-label="Notificações" style="width: 44px; height: 44px; border-radius: 999px; border: 0; background: transparent; color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"></path><path d="M13.7 20a2 2 0 0 1-3.4 0"></path></svg>
+    </button>
+
+    <a href="Perfil-Desktop.dc.html" aria-label="Seu perfil" style="display: block; width: 44px; height: 44px; border-radius: 999px; overflow: hidden; flex-shrink: 0; background: var(--elevated);">
+      <img src="./assets/d4df557aba6a1084219f527a6dc8b3dd.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+    </a>
+  </header>
+
+  <div style="display: grid; grid-template-columns: 260px minmax(0, 1fr) 300px; gap: 24px; padding: 0 32px; align-items: start;">
+
+    <nav aria-label="Navegação principal" style="background: var(--surface); border-radius: 20px; padding: 12px; display: flex; flex-direction: column; gap: 4px;">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="6">
+        <a class="nav-item" href="{{ n.href }}" style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-radius: 12px; background: {{ n.bg }}; color: {{ n.color }}; font-size: 14px; font-weight: 500; line-height: 1.45; min-width: 0;">
+          <span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0;" aria-hidden="true">
+            <sc-if value="{{ n.isInicio }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-5H9v5H5a1 1 0 0 1-1-1Z"></path></svg></sc-if>
+            <sc-if value="{{ n.isBuscar }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg></sc-if>
+            <sc-if value="{{ n.isMensagens }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a7.5 7.5 0 0 1-10.9 6.7L4 20l1.4-5A7.5 7.5 0 1 1 21 11.5Z"></path></svg></sc-if>
+            <sc-if value="{{ n.isCriar }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v8M8 12h8"></path></svg></sc-if>
+            <sc-if value="{{ n.isGrupos }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="6.6" r="3.2"></circle><circle cx="6.4" cy="16.6" r="3.2"></circle><circle cx="17.6" cy="16.6" r="3.2"></circle></svg></sc-if>
+            <sc-if value="{{ n.isPerfil }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></sc-if>
+          </span>
+          <span class="one-line" style="min-width: 0; flex-grow: 1;">{{ n.label }}</span>
+          <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ true }}">
+            <span aria-label="{{ n.badgeLabel }}" style="display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: {{ n.badgeBg }}; font-size: 12px; font-weight: 600; line-height: 1; color: {{ n.badgeColor }}; flex-shrink: 0;">{{ n.badge }}</span>
+          </sc-if>
+        </a>
+      </sc-for>
+
+      <span style="display: block; height: 1px; background: var(--border); margin: 8px 12px;"></span>
+
+      <a class="nav-item" href="Configuracoes-Desktop.dc.html" style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-radius: 12px; color: var(--text-3); font-size: 14px; font-weight: 500; line-height: 1.45; min-width: 0;">
+        <span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0;" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"></path></svg>
+        </span>
+        <span class="one-line" style="min-width: 0;">Configurações</span>
+      </a>
+    </nav>
+
+    <div style="display: flex; flex-direction: column; gap: 24px; min-width: 0;">
+
+      <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+        <h1 style="margin: 0; font-size: 24px; line-height: 1.2; font-weight: 700; color: var(--text-1); min-width: 0;">Resultados para “violão”</h1>
+        <span style="font-size: 14px; line-height: 1.5; color: var(--text-4);">48 resultados</span>
+      </div>
+
+      <section aria-labelledby="sec-pessoas" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: baseline; gap: 12px;">
+          <h2 id="sec-pessoas" style="margin: 0; font-size: 20px; line-height: 1.25; font-weight: 600; color: var(--text-1);">Pessoas</h2>
+          <div style="flex-grow: 1;"></div>
+          <a href="#pessoas" style="font-size: 14px; font-weight: 500; line-height: 1.45; color: var(--brand-200);">Ver todas</a>
+        </div>
+        <ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+          <sc-for list="{{ pessoas }}" as="p" hint-placeholder-count="4">
+            <li style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: var(--surface); min-width: 0;">
+              <a href="#perfil" style="display: block; width: 48px; height: 48px; border-radius: 999px; overflow: hidden; flex-shrink: 0; background: var(--elevated);">
+                <img src="{{ p.avatar }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+              </a>
+              <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1;">
+                <a href="#perfil" class="one-line" style="font-size: 14px; font-weight: 600; line-height: 1.45; color: var(--text-1);">{{ p.nome }}</a>
+                <span class="one-line" style="font-size: 12px; line-height: 1.4; color: var(--text-4);">{{ p.handle }} · {{ p.contexto }}</span>
+              </div>
+              <button type="button" style="height: 40px; padding: 0 16px; border-radius: 12px; border: 1px solid {{ p.btnBorder }}; background: {{ p.btnBg }}; font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1.3; color: {{ p.btnColor }}; cursor: pointer; flex-shrink: 0;">{{ p.btnLabel }}</button>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+
+      <section aria-labelledby="sec-grupos" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: baseline; gap: 12px;">
+          <h2 id="sec-grupos" style="margin: 0; font-size: 20px; line-height: 1.25; font-weight: 600; color: var(--text-1);">Grupos</h2>
+          <div style="flex-grow: 1;"></div>
+          <a href="#grupos" style="font-size: 14px; font-weight: 500; line-height: 1.45; color: var(--brand-200);">Ver todos</a>
+        </div>
+        <ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+          <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="4">
+            <li style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: var(--surface); min-width: 0;">
+              <a href="#grupo" style="display: block; width: 56px; height: 56px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: var(--elevated);">
+                <img src="{{ g.cover }}" alt="" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+              </a>
+              <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0; flex-grow: 1;">
+                <a href="#grupo" class="one-line" style="font-size: 14px; font-weight: 600; line-height: 1.45; color: var(--text-1);">{{ g.nome }}</a>
+                <div style="display: flex; align-items: center; gap: 8px; color: var(--text-4); min-width: 0;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"></circle><path d="M5.5 20.2a6.5 6.5 0 0 1 13 0"></path></svg>
+                  <span class="one-line" style="font-size: 12px; line-height: 1.4; min-width: 0;">{{ g.membros }} · {{ g.privacidade }}</span>
+                </div>
+              </div>
+              <button type="button" style="height: 40px; padding: 0 16px; border-radius: 12px; border: 1px solid {{ g.btnBorder }}; background: {{ g.btnBg }}; font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1.3; color: {{ g.btnColor }}; cursor: pointer; flex-shrink: 0;">{{ g.btnLabel }}</button>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+
+    </div>
+
+    <aside aria-labelledby="filtros-titulo" style="background: var(--surface); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+      <h2 id="filtros-titulo" style="margin: 0; font-size: 16px; line-height: 1.3; font-weight: 600; color: var(--text-1);">Filtros</h2>
+
+      <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+        <legend style="padding: 0; font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--text-4);">Tipo</legend>
+        <sc-for list="{{ tipos }}" as="t" hint-placeholder-count="4">
+          <div style="display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0;">
+            <input id="{{ t.id }}" type="radio" name="tipo" defaultChecked="{{ t.checked }}" style="width: 18px; height: 18px; accent-color: {{ accent }}; margin: 0; flex-shrink: 0;">
+            <label for="{{ t.id }}" class="one-line" style="font-size: 14px; line-height: 1.45; color: var(--text-2); min-width: 0;">{{ t.label }}</label>
+          </div>
+        </sc-for>
+      </fieldset>
+
+      <span style="display: block; height: 1px; background: var(--border);"></span>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--text-4);">Categorias</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <sc-for list="{{ categorias }}" as="c" hint-placeholder-count="6">
+            <a href="#categoria" style="display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid {{ c.border }}; background: {{ c.bg }}; font-size: 12px; font-weight: 500; line-height: 1.3; color: {{ c.color }};">{{ c.label }}</a>
+          </sc-for>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#6155F5","options":["#6155F5","#756BFF","#558DF5"],"section":"Tema"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const B = (id) => '/_blob/' + id;
+    const accent = this.props.accent ?? '#6155F5';
+    const primario = { btnBg: accent, btnBorder: accent, btnColor: '#FFFFFF' };
+    const neutro = { btnBg: 'transparent', btnBorder: '#4A494E', btnColor: '#D3D3D3' };
+    const flags = { isInicio: false, isBuscar: false, isMensagens: false, isCriar: false, isGrupos: false, isPerfil: false };
+    const item = (label, href, key, ativo, badge) => Object.assign({}, flags, {
+      label: label,
+      href: href,
+      bg: ativo ? accent : 'transparent',
+      color: ativo ? '#FFFFFF' : '#A2A2A2',
+      badge: badge || '',
+      badgeLabel: badge ? badge + ' conversas não lidas' : '',
+      badgeBg: ativo ? '#FFFFFF' : accent,
+      badgeColor: ativo ? accent : '#FFFFFF'
+    }, (function () { const o = {}; o[key] = true; return o; })());
+
+    return {
+      accent: accent,
+      nav: [
+        item('Início', 'Home-Desktop.dc.html', 'isInicio', false),
+        item('Buscar', '#buscar', 'isBuscar', true),
+        item('Mensagens', 'Mensagens-Desktop.dc.html', 'isMensagens', false, '2'),
+        item('Criar', 'Criar-Desktop.dc.html', 'isCriar', false),
+        item('Grupos', 'Grupos-Desktop.dc.html', 'isGrupos', false),
+        item('Perfil', 'Perfil-Desktop.dc.html', 'isPerfil', false)
+      ],
+      pessoas: [
+        Object.assign({ nome: 'João Prado', handle: '@joao_violao', avatar: B('562fa5e0b44c2bfb4966d048a0e0a5cc'), contexto: 'Violão e Voz', btnLabel: 'Seguir' }, primario),
+        Object.assign({ nome: 'Marina Alves', handle: '@marina.violao', avatar: B('d70eb4949c16dfb88fa72b50e071ea33'), contexto: '3 em comum', btnLabel: 'Seguir' }, primario),
+        Object.assign({ nome: 'Elina Castro', handle: '@elina321', avatar: B('b9d0e0c6462917737af4f43af3d11f54'), contexto: 'Você segue', btnLabel: 'Seguindo' }, neutro),
+        Object.assign({ nome: 'Rafa Bass', handle: '@baixo_groove', avatar: B('45bbabe584bfbec2ef0d732c9551a6da'), contexto: 'Baixo & Groove', btnLabel: 'Seguir' }, primario)
+      ],
+      grupos: [
+        Object.assign({ nome: 'Violão e Voz', cover: B('8c05828cc80395269ce165e1604d7d12'), membros: '975 membros', privacidade: 'Público', btnLabel: 'Participar' }, primario),
+        Object.assign({ nome: 'Violão Iniciantes', cover: B('64967519fa908662372a9f97fab22320'), membros: '2,1 mil membros', privacidade: 'Público', btnLabel: 'Participar' }, primario),
+        Object.assign({ nome: 'Violão Clássico', cover: B('d340387bc462a18fd4d3603e74d519d3'), membros: '412 membros', privacidade: 'Privado', btnLabel: 'Solicitar' }, neutro),
+        Object.assign({ nome: 'Dedilhado & Fingerstyle', cover: B('d1498bd93cbbf34e4b76f4d75558d29a'), membros: '1,3 mil membros', privacidade: 'Público', btnLabel: 'Participar' }, primario)
+      ],
+      tipos: [
+        { id: 'f-tudo', label: 'Tudo', checked: true },
+        { id: 'f-pessoas', label: 'Pessoas', checked: false },
+        { id: 'f-grupos', label: 'Grupos', checked: false },
+        { id: 'f-posts', label: 'Publicações', checked: false }
+      ],
+      categorias: [
+        { label: 'Violão', bg: 'rgba(97, 85, 245, 0.16)', border: accent, color: '#FFFFFF' },
+        { label: 'Produção', bg: '#2C2B2F', border: '#4A494E', color: '#D3D3D3' },
+        { label: 'Vinil', bg: '#2C2B2F', border: '#4A494E', color: '#D3D3D3' },
+        { label: 'Worship', bg: '#2C2B2F', border: '#4A494E', color: '#D3D3D3' },
+        { label: 'Teclado', bg: '#2C2B2F', border: '#4A494E', color: '#D3D3D3' },
+        { label: 'Baixo', bg: '#2C2B2F', border: '#4A494E', color: '#D3D3D3' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

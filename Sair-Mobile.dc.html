@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Sair da conta — Mobile</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+:root {
+  --canvas: #19181B;
+  --canvas-deep: #121114;
+  --surface: #242326;
+  --elevated: #2C2B2F;
+  --border: #37363A;
+  --border-strong: #4A494E;
+  --text-1: #F1F1F2;
+  --text-2: #D3D3D3;
+  --text-2-dim: #BDBDBF;
+  --text-3: #A2A2A2;
+  --text-4: #858487;
+  --text-5: #626166;
+  --on-brand: #FFFFFF;
+  --brand-100: #DAD7FF;
+  --brand-200: #B6B1FF;
+  --brand-300: #938CFF;
+  --brand-400: #756BFF;
+  --brand-500: #6155F5;
+  --success: #4CCB88;
+  --error: #EF5B67;
+}
+body { margin: 0; font-family: Inter, sans-serif; background: var(--canvas); -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+a { color: var(--brand-200); text-decoration: none; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--brand-300); outline-offset: 2px; }
+img { max-width: 100%; display: block; }
+.one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 420px; box-sizing: border-box; background: rgba(18, 17, 20, 0.82); display: flex; align-items: flex-end;">
+
+  <div role="alertdialog" aria-modal="true" aria-labelledby="sair-titulo" aria-describedby="sair-texto" style="width: 100%; border-radius: 20px 20px 0 0; background: var(--surface); border-top: 1px solid var(--border); padding: 24px 16px 20px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+
+    <span style="display: block; width: 64px; height: 64px; border-radius: 999px; overflow: hidden; background: var(--elevated);">
+      <img src="./assets/d4df557aba6a1084219f527a6dc8b3dd.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+    </span>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; text-align: center;">
+      <h1 id="sair-titulo" style="margin: 0; font-size: 20px; line-height: 1.25; font-weight: 600; color: var(--text-1);">Deseja sair?</h1>
+      <p id="sair-texto" style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-3); max-width: 34ch;">Você vai sair de <strong style="font-weight: 600; color: var(--text-2);">@richard.k</strong>. Seus rascunhos ficam salvos neste aparelho.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+      <a href="Main.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 12px; background: var(--error); color: var(--canvas); font-size: 16px; font-weight: 600; line-height: 1.5;">Sair da conta</a>
+      <a href="Configuracoes-Mobile.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 12px; border: 1px solid var(--border-strong); color: var(--text-2); font-size: 16px; font-weight: 600; line-height: 1.5;">Cancelar</a>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#6155F5","options":["#6155F5","#756BFF","#558DF5"],"section":"Tema"},"$preview":{"width":390,"height":420}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#6155F5' };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Grupo — Mobile</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+:root {
+  --canvas: #19181B;
+  --canvas-deep: #121114;
+  --surface: #242326;
+  --elevated: #2C2B2F;
+  --border: #37363A;
+  --border-strong: #4A494E;
+  --text-1: #F1F1F2;
+  --text-2: #D3D3D3;
+  --text-2-dim: #BDBDBF;
+  --text-3: #A2A2A2;
+  --text-4: #858487;
+  --text-5: #626166;
+  --on-brand: #FFFFFF;
+  --brand-100: #DAD7FF;
+  --brand-200: #B6B1FF;
+  --brand-300: #938CFF;
+  --brand-400: #756BFF;
+  --brand-500: #6155F5;
+  --success: #4CCB88;
+  --error: #EF5B67;
+}
+body { margin: 0; font-family: Inter, sans-serif; background: var(--canvas); -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+a { color: var(--brand-200); text-decoration: none; }
+a:hover { color: var(--brand-100); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--brand-300); outline-offset: 2px; }
+img { max-width: 100%; display: block; }
+.one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1240px; box-sizing: border-box; background: var(--canvas); padding: 0 0 104px; display: flex; flex-direction: column; gap: 20px;">
+
+  <div style="position: relative; width: 100%; height: 180px; background: var(--elevated); flex-shrink: 0;">
+    <img src="./assets/8c05828cc80395269ce165e1604d7d12.jpg" alt="Parede de violões em uma loja de instrumentos" style="width: 100%; height: 100%; object-fit: cover;">
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 96px; background: linear-gradient(180deg, rgba(25, 24, 27, 0.72) 0%, rgba(25, 24, 27, 0) 100%);"></div>
+    <a href="Grupos-Mobile.dc.html" aria-label="Voltar para grupos" style="position: absolute; top: 12px; left: 12px; width: 44px; height: 44px; border-radius: 999px; background: rgba(25, 24, 27, 0.6); border: 1px solid rgba(241, 241, 242, 0.2); color: var(--on-brand); display: flex; align-items: center; justify-content: center;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+    </a>
+    <button type="button" aria-label="Mais opções do grupo" style="position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 999px; background: rgba(25, 24, 27, 0.6); border: 1px solid rgba(241, 241, 242, 0.2); color: var(--on-brand); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg>
+    </button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px; padding: 0 16px;">
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <h1 style="margin: 0; font-size: 24px; line-height: 1.2; font-weight: 700; color: var(--text-1); letter-spacing: -0.3px; overflow-wrap: anywhere;">Violão e Voz</h1>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <span style="display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--text-2);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3.5 12h17M12 3.2a15 15 0 0 1 0 17.6M12 3.2a15 15 0 0 0 0 17.6"></path></svg>
+          Público
+        </span>
+        <span style="display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--text-2);">Violão</span>
+      </div>
+
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-3); overflow-wrap: anywhere;">Gente que toca e canta junto. Levadas, dedilhados, cifras e os vídeos do ensaio de domingo.</p>
+    </div>
+
+    <a href="#membros" style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+      <span style="display: flex; align-items: center;">
+        <sc-for list="{{ membrosAvatars }}" as="a" hint-placeholder-count="4">
+          <span style="display: block; width: 32px; height: 32px; border-radius: 999px; overflow: hidden; border: 2px solid var(--canvas); margin-left: {{ a.offset }}; background: var(--elevated);">
+            <img src="{{ a.img }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+          </span>
+        </sc-for>
+      </span>
+      <span class="one-line" style="font-size: 14px; line-height: 1.45; color: var(--text-2); min-width: 0;">975 membros · 43 grupos</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#858487" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M9 6l6 6-6 6"></path></svg>
+    </a>
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button type="button" style="flex-grow: 1; min-width: 0; height: 48px; border-radius: 12px; border: 0; background: {{ accent }}; font-family: inherit; font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--on-brand); cursor: pointer;">Participar</button>
+      <button type="button" aria-label="Convidar pessoas" style="width: 48px; height: 48px; border-radius: 12px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.6a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"></path><circle cx="9.5" cy="7.5" r="3.4"></circle><path d="M19 8v6M22 11h-6"></path></svg>
+      </button>
+    </div>
+
+    <div style="display: flex; gap: 24px; border-bottom: 1px solid var(--elevated);">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+        <a href="#tab" aria-current="{{ t.current }}" style="font-size: 14px; font-weight: {{ t.peso }}; line-height: 1.45; color: {{ t.color }}; padding: 12px 0; border-bottom: 2px solid {{ t.borda }};">{{ t.label }}</a>
+      </sc-for>
+    </div>
+
+  </div>
+
+  <section aria-label="Publicações do grupo" style="display: flex; flex-direction: column; gap: 12px; padding: 0 16px;">
+    <article style="background: var(--surface); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <a href="#perfil" style="display: block; width: 40px; height: 40px; border-radius: 999px; overflow: hidden; flex-shrink: 0; background: var(--elevated);">
+          <img src="./assets/562fa5e0b44c2bfb4966d048a0e0a5cc.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+        </a>
+        <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1;">
+          <a href="#perfil" class="one-line" style="font-size: 15px; font-weight: 600; line-height: 1.3; color: var(--text-1);">@joao_violao</a>
+          <span class="one-line" style="font-size: 12px; line-height: 1.4; color: var(--text-4);">12 min · Violão e Voz</span>
+        </div>
+        <button type="button" aria-label="Mais opções da publicação" style="width: 32px; height: 32px; border: 0; background: transparent; color: var(--text-3); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg>
+        </button>
+      </div>
+
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-2); overflow-wrap: anywhere;">Alguém tem uma levada boa pra essa progressão? Travei no refrão 🙃</p>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <a href="#tag" style="display: inline-flex; align-items: center; height: 30px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border-strong); font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--brand-200);">#levada</a>
+        <a href="#tag" style="display: inline-flex; align-items: center; height: 30px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border-strong); font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--brand-200);">#duvida</a>
+      </div>
+
+      <div style="width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: var(--elevated);">
+        <img src="./assets/d1498bd93cbbf34e4b76f4d75558d29a.jpg" alt="Mão dedilhando as cordas de um violão" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <a href="Comentarios-Mobile.dc.html" class="one-line" style="font-size: 12px; line-height: 1.4; color: var(--text-3); min-width: 0;">9 comentários</a>
+        <div style="flex-grow: 1;"></div>
+        <button type="button" aria-label="Curtir" style="width: 44px; height: 44px; border: 0; background: transparent; color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.4 4.6 13a4.5 4.5 0 0 1 6.4-6.3l1 1 1-1A4.5 4.5 0 1 1 19.4 13Z"></path></svg>
+        </button>
+        <button type="button" aria-label="Comentar" style="width: 44px; height: 44px; border: 0; background: transparent; color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"></path></svg>
+        </button>
+        <button type="button" aria-label="Compartilhar" style="width: 44px; height: 44px; border: 0; background: transparent; color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16c0-6 5-8 10-8V4l6 6-6 6v-4c-4 0-8 .8-10 4Z"></path></svg>
+        </button>
+      </div>
+
+    </article>
+  </section>
+
+  <nav aria-label="Navegação principal" style="position: absolute; left: 0; right: 0; bottom: 0; height: 88px; padding: 8px 16px 20px; background: var(--canvas); border-top: 1px solid var(--elevated); display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+    <a href="Home-Mobile.dc.html" aria-label="Início" style="width: 44px; height: 44px; border-radius: 12px; color: var(--text-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-5H9v5H5a1 1 0 0 1-1-1Z"></path></svg>
+    </a>
+    <a href="Buscar-Mobile.dc.html" aria-label="Buscar" style="width: 44px; height: 44px; border-radius: 12px; color: var(--text-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg>
+    </a>
+    <a href="Criar-Mobile.dc.html" aria-label="Criar publicação" style="width: 56px; height: 56px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--elevated); color: var(--text-1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"></path></svg>
+    </a>
+    <a href="Mensagens-Mobile.dc.html" aria-label="Mensagens, 2 conversas não lidas" style="position: relative; width: 44px; height: 44px; border-radius: 12px; color: var(--text-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a7.5 7.5 0 0 1-10.9 6.7L4 20l1.4-5A7.5 7.5 0 1 1 21 11.5Z"></path></svg>
+      <span aria-hidden="true" style="position: absolute; top: 2px; right: 2px; display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: {{ accent }}; border: 2px solid var(--canvas); font-size: 12px; font-weight: 600; line-height: 1; color: var(--on-brand);">2</span>
+    </a>
+    <a href="Perfil-Mobile.dc.html" aria-label="Perfil" style="width: 44px; height: 44px; border-radius: 12px; color: var(--text-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg>
+    </a>
+  </nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#6155F5","options":["#6155F5","#756BFF","#558DF5"],"section":"Tema"},"$preview":{"width":390,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const B = (id) => '/_blob/' + id;
+    const accent = this.props.accent ?? '#6155F5';
+    const tab = (label, ativo) => ({
+      label: label,
+      current: ativo ? 'page' : 'false',
+      peso: ativo ? '600' : '500',
+      color: ativo ? '#F1F1F2' : '#858487',
+      borda: ativo ? accent : 'transparent'
+    });
+
+    return {
+      accent: accent,
+      membrosAvatars: [
+        B('562fa5e0b44c2bfb4966d048a0e0a5cc'),
+        B('d4df557aba6a1084219f527a6dc8b3dd'),
+        B('81f87a851d7bc9e765031d78a4ed61f7'),
+        B('d70eb4949c16dfb88fa72b50e071ea33')
+      ].map((img, i) => ({ img: img, offset: i === 0 ? '0px' : '-12px' })),
+      tabs: [tab('Publicações', true), tab('Membros', false), tab('Sobre', false)]
+    };
+  }
+}
+</script>
+</body>
+</html>

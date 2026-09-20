@@ -1,0 +1,32 @@
+# dependências
+node_modules/
+
+# build
+dist/
+*.tsbuildinfo
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# segredos — nunca versionar
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# sistema operacional / editor
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# cache de ferramentas
+.vite/
+.cache/

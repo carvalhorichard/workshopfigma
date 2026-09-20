@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Comentários — Mobile</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+:root {
+  --canvas: #19181B;
+  --canvas-deep: #121114;
+  --surface: #242326;
+  --elevated: #2C2B2F;
+  --border: #37363A;
+  --border-strong: #4A494E;
+  --text-1: #F1F1F2;
+  --text-2: #D3D3D3;
+  --text-2-dim: #BDBDBF;
+  --text-3: #A2A2A2;
+  --text-4: #858487;
+  --text-5: #626166;
+  --on-brand: #FFFFFF;
+  --brand-100: #DAD7FF;
+  --brand-200: #B6B1FF;
+  --brand-300: #938CFF;
+  --brand-400: #756BFF;
+  --brand-500: #6155F5;
+  --success: #4CCB88;
+  --error: #EF5B67;
+}
+body { margin: 0; font-family: Inter, sans-serif; background: var(--canvas); -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+a { color: var(--brand-200); text-decoration: none; }
+a:hover { color: var(--brand-100); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--brand-300); outline-offset: 2px; }
+input::placeholder { color: var(--text-4); }
+img { max-width: 100%; display: block; }
+.one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: var(--canvas); overflow: hidden;">
+
+  <img src="./assets/aa13cde3e83f53040acbe5eea59bf935.jpg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+  <div style="position: absolute; inset: 0; background: rgba(18, 17, 20, 0.82);"></div>
+
+  <div role="dialog" aria-modal="true" aria-labelledby="sheet-titulo" style="position: absolute; left: 0; right: 0; bottom: 0; height: 700px; border-radius: 20px 20px 0 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;">
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 10px 16px 12px; border-bottom: 1px solid var(--elevated); flex-shrink: 0;">
+      <span aria-hidden="true" style="display: block; width: 40px; height: 4px; border-radius: 999px; background: var(--border-strong);"></span>
+      <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+        <h1 id="sheet-titulo" style="margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text-1); min-width: 0;">38 comentários</h1>
+        <div style="flex-grow: 1;"></div>
+        <a href="Post-Detalhe-Mobile.dc.html" aria-label="Fechar comentários" style="width: 44px; height: 44px; margin-right: -12px; border-radius: 999px; color: var(--text-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </a>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 16px;">
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 20px;">
+        <sc-for list="{{ comentarios }}" as="c" hint-placeholder-count="5">
+          <li style="display: flex; align-items: flex-start; gap: 12px; min-width: 0; margin-left: {{ c.recuo }};">
+            <a href="Perfil-Outro-Mobile.dc.html" style="display: block; width: {{ c.avatarSize }}; height: {{ c.avatarSize }}; border-radius: 999px; overflow: hidden; flex-shrink: 0; background: var(--elevated);">
+              <img src="{{ c.avatar }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+            </a>
+            <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0; flex-grow: 1;">
+              <div style="display: flex; align-items: baseline; gap: 8px; min-width: 0;">
+                <a href="Perfil-Outro-Mobile.dc.html" class="one-line" style="font-size: 14px; font-weight: 600; line-height: 1.45; color: var(--text-1); min-width: 0;">{{ c.handle }}</a>
+                <span style="font-size: 12px; line-height: 1.4; color: var(--text-5); flex-shrink: 0;">{{ c.tempo }}</span>
+                <sc-if value="{{ c.autor }}" hint-placeholder-val="{{ true }}">
+                  <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; border: 1px solid {{ accent }}; font-size: 12px; font-weight: 500; line-height: 1; color: var(--brand-200); flex-shrink: 0;">autora</span>
+                </sc-if>
+              </div>
+              <p style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-2); overflow-wrap: anywhere;">{{ c.texto }}</p>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <button type="button" style="border: 0; background: transparent; padding: 4px 0; font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--text-4); cursor: pointer;">Responder</button>
+                <sc-if value="{{ c.respostas }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" style="border: 0; background: transparent; padding: 4px 0; font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--brand-200); cursor: pointer;">{{ c.respostas }}</button>
+                </sc-if>
+              </div>
+            </div>
+            <button type="button" aria-label="Curtir comentário" style="display: flex; flex-direction: column; align-items: center; gap: 2px; width: 32px; border: 0; background: transparent; color: {{ c.curtidaCor }}; cursor: pointer; flex-shrink: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="{{ c.curtidaFill }}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.4 4.6 13a4.5 4.5 0 0 1 6.4-6.3l1 1 1-1A4.5 4.5 0 1 1 19.4 13Z"></path></svg>
+              <span style="font-size: 12px; line-height: 1.3;">{{ c.curtidas }}</span>
+            </button>
+          </li>
+        </sc-for>
+      </ul>
+    </div>
+
+    <div style="padding: 10px 16px 20px; border-top: 1px solid var(--elevated); display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+      <span style="display: block; width: 36px; height: 36px; border-radius: 999px; overflow: hidden; flex-shrink: 0; background: var(--elevated);">
+        <img src="./assets/d4df557aba6a1084219f527a6dc8b3dd.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+      </span>
+      <div style="position: relative; flex-grow: 1; min-width: 0;">
+        <label for="comentario" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;">Escreva um comentário</label>
+        <input id="comentario" type="text" placeholder="Comentar como @richard.k" style="width: 100%; min-width: 0; height: 44px; border-radius: 999px; border: 1px solid var(--border); background: var(--elevated); padding: 0 44px 0 16px; font-family: inherit; font-size: 14px; color: var(--text-1);">
+        <button type="button" aria-label="Inserir emoji" style="position: absolute; top: 0; right: 0; width: 44px; height: 44px; border-radius: 999px; border: 0; background: transparent; color: var(--text-3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9 10h.01M15 10h.01M8.5 14.5a4.5 4.5 0 0 0 7 0"></path></svg>
+        </button>
+      </div>
+      <button type="button" aria-label="Enviar comentário" style="width: 44px; height: 44px; border-radius: 999px; border: 0; background: {{ accent }}; color: var(--on-brand); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 20 4l-7.5 16-2-6.5Z"></path></svg>
+      </button>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#6155F5","options":["#6155F5","#756BFF","#558DF5"],"section":"Tema"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const B = (id) => '/_blob/' + id;
+    const accent = this.props.accent ?? '#6155F5';
+    const raiz = { recuo: '0px', avatarSize: '36px' };
+    const resposta = { recuo: '48px', avatarSize: '28px' };
+    const curtido = { curtidaCor: accent, curtidaFill: accent };
+    const neutro = { curtidaCor: '#858487', curtidaFill: 'none' };
+
+    return {
+      accent: accent,
+      comentarios: [
+        Object.assign({ handle: '@joao_violao', tempo: '4 min', texto: 'Se achar um Clube da Esquina original, não pensa duas vezes.', curtidas: '12', respostas: '', autor: false, avatar: B('562fa5e0b44c2bfb4966d048a0e0a5cc') }, raiz, curtido),
+        Object.assign({ handle: '@elina321', tempo: '3 min', texto: 'Tava justamente atrás desse! Obrigada 🙏', curtidas: '3', respostas: '', autor: true, avatar: B('b9d0e0c6462917737af4f43af3d11f54') }, resposta, neutro),
+        Object.assign({ handle: '@estudio_nove', tempo: '3 min', texto: 'Que prateleira linda. Onde fica esse sebo?', curtidas: '4', respostas: 'Ver 1 resposta', autor: false, avatar: B('67c575cd532301cb170ebf415148a249') }, raiz, neutro),
+        Object.assign({ handle: '@marina.violao', tempo: '1 min', texto: 'Tenho um sobrando aqui, te mando foto depois 😄', curtidas: '2', respostas: '', autor: false, avatar: B('d70eb4949c16dfb88fa72b50e071ea33') }, raiz, neutro),
+        Object.assign({ handle: '@baixo_groove', tempo: 'agora', texto: 'Pega qualquer coisa do selo Odeon que não tem erro.', curtidas: '0', respostas: '', autor: false, avatar: B('45bbabe584bfbec2ef0d732c9551a6da') }, raiz, neutro)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
