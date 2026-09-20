@@ -3,7 +3,16 @@ import { useApp } from '../app/store';
 import { api } from '../lib/api';
 import { Shell } from '../components/layout/Shell';
 import { PessoaLinha } from '../components/domain';
-import { Avatar, Button, Icon, IconButton, Skeleton, Vazio } from '../components/ui';
+import {
+  Avatar,
+  Button,
+  CabecalhoTela,
+  CampoBusca,
+  Icon,
+  IconButton,
+  Skeleton,
+  Vazio,
+} from '../components/ui';
 import type { Conversa, Mensagem } from '../data/types';
 
 function LinhaConversa({ c, onAbrir }: { c: Conversa; onAbrir: () => void }) {
@@ -56,29 +65,21 @@ export function Mensagens() {
   return (
     <Shell>
       <div className="flex flex-col gap-4 pb-6">
-        <div className="safe-t sticky top-0 z-20 flex flex-col gap-3 bg-canvas/95 px-4 pb-1 pt-4 backdrop-blur">
-          <div className="flex items-center gap-2">
-            <h1 className="m-0 min-w-0 flex-1 text-2xl font-bold tracking-tight text-t1">
-              Mensagens
-            </h1>
-            <IconButton name="search" label="Buscar pessoas" onClick={() => go('buscar')} />
-          </div>
+        <CabecalhoTela
+          titulo="Mensagens"
+          acao={
+            <IconButton name="plus" label="Nova conversa" onClick={() => go('buscar')} />
+          }
+        >
           {s.conversas.length > 0 && (
-            <div className="relative">
-              <input
-                type="search"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Buscar conversa"
-                aria-label="Buscar conversa"
-                className="h-12 w-full rounded-xl border border-line bg-surface pl-11 pr-4 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
-              />
-              <span className="pointer-events-none absolute left-0 top-0 flex h-12 w-11 items-center justify-center text-t3">
-                <Icon name="search" size={18} />
-              </span>
-            </div>
+            <CampoBusca
+              valor={q}
+              onChange={setQ}
+              placeholder="Buscar conversa"
+              rotulo="Buscar conversa"
+            />
           )}
-        </div>
+        </CabecalhoTela>
 
         {s.conversas.length === 0 ? (
           <>

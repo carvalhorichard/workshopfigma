@@ -102,7 +102,9 @@ export function Perfil() {
           )}
         </div>
 
-        <div className="-mt-14 flex flex-col gap-3 px-4">
+        {/* relative + z-10: sem isso a capa, que é `relative`, pinta por cima
+            do avatar e corta a foto pela metade */}
+        <div className="relative z-10 -mt-14 flex flex-col gap-3 px-4">
           <Avatar
             src={p.avatar}
             nome={p.nome}
@@ -135,15 +137,26 @@ export function Perfil() {
 
           <div className="flex gap-6 py-1">
             {[
-              { v: p.publicacoes, l: 'publicações' },
-              { v: p.seguidores, l: 'seguidores' },
-              { v: p.seguindo, l: 'seguindo' },
-            ].map((st) => (
-              <div key={st.l}>
-                <span className="block text-lg font-bold text-t1">{st.v}</span>
-                <span className="block text-xs text-t4">{st.l}</span>
-              </div>
-            ))}
+              { v: p.publicacoes, l: 'publicações', tipo: null },
+              { v: p.seguidores, l: 'seguidores', tipo: 'followers' as const },
+              { v: p.seguindo, l: 'seguindo', tipo: 'following' as const },
+            ].map((st) =>
+              st.tipo ? (
+                <button
+                  key={st.l}
+                  onClick={() => abrir('seguidores', { handle: p.handle, tipo: st.tipo })}
+                  className="cursor-pointer rounded-lg border-0 bg-transparent p-0 text-left transition-opacity hover:opacity-70"
+                >
+                  <span className="block text-lg font-bold text-t1">{st.v}</span>
+                  <span className="block text-xs text-t4">{st.l}</span>
+                </button>
+              ) : (
+                <div key={st.l}>
+                  <span className="block text-lg font-bold text-t1">{st.v}</span>
+                  <span className="block text-xs text-t4">{st.l}</span>
+                </div>
+              ),
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">

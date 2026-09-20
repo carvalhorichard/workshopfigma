@@ -1,7 +1,9 @@
 /** Primitivas de UI compartilhadas por todas as telas. */
 import {
+  useCallback,
   useEffect,
   useRef,
+  useState,
   type ButtonHTMLAttributes,
   type ReactNode,
 } from 'react';
@@ -148,6 +150,7 @@ export function IconButton({
   name: IconName;
   label: string;
   size?: number;
+  /** estado ligado: pinta com a cor de destaque e preenche o ícone */
   ativo?: boolean;
 }) {
   return (
@@ -156,11 +159,233 @@ export function IconButton({
       type="button"
       aria-label={label}
       title={label}
+      aria-pressed={ativo}
       className={`flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-elevated ${className}`}
       style={{ color: ativo ? 'var(--accent)' : undefined, ...rest.style }}
     >
-      <Icon name={name} size={size} />
+      {/* a key remonta o ícone a cada troca, fazendo a animação tocar de novo */}
+      <Icon
+        key={ativo ? 'on' : 'off'}
+        name={name}
+        size={size}
+        preenchido={ativo}
+        className={ativo ? 'anim-curtir' : undefined}
+      />
     </button>
+  );
+}
+
+/* ── trilho horizontal ───────────────────────────────────────────────── */
+
+/**
+ * Faixa com rolagem horizontal. No mobile rola com o dedo; no desktop ganha
+ * setas — que só aparecem quando o conteúdo realmente transborda, e cada uma
+ * só quando há para onde ir naquele sentido.
+ */
+export function Rail({
+  children,
+  className = '',
+  label,
+}: {
+  children: ReactNode;
+  className?: string;
+  label?: string;
+}) {
+  const trilho = useRef<HTMLDivElement>(null);
+  const [esq, setEsq] = useState(false);
+  const [dir, setDir] = useState(false);
+
+  const medir = useCallback(() => {
+    const el = trilho.current;
+    if (!el) return;
+    const folga = 4; // tolerância para arredondamento de subpixel
+    setEsq(el.scrollLeft > folga);
+    setDir(el.scrollLeft + el.clientWidth < el.scrollWidth - folga);
+  }, []);
+
+  // remede quando a janela, o trilho ou os itens mudam de tamanho
+  useEffect(() => {
+    const el = trilho.current;
+    if (!el) return;
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    window.addEventListener('resize', medir);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', medir);
+    };
+  }, [medir, children]);
+
+  const rolar = (sentido: -1 | 1) => {
+    const el = trilho.current;
+    if (!el) return;
+    el.scrollBy({ left: sentido * Math.round(el.clientWidth * 0.8), behavior: 'smooth' });
+  };
+
+  const seta =
+    'absolute top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 cursor-pointer items-center ' +
+    'justify-center rounded-full border border-line-strong bg-canvas/85 text-t1 shadow-lg ' +
+    'shadow-black/40 backdrop-blur transition-colors hover:bg-elevated dk:flex';
+
+  return (
+    /* px-4 aqui (e não no conteúdo) faz o trilho começar e terminar exatamente
+       onde os cards de publicação terminam — as duas seções ficam na mesma
+       coluna, sem a faixa parecer 16px mais larga na direita */
+    <div className="relative px-4">
+      <div
+        ref={trilho}
+        onScroll={medir}
+        aria-label={label}
+        className={`rail w-full ${className}`}
+      >
+        {children}
+      </div>
+
+      {esq && (
+        <button
+          type="button"
+          aria-label="Rolar para a esquerda"
+          onClick={() => rolar(-1)}
+          className={`${seta} left-5`}
+        >
+          <Icon name="back" size={20} />
+        </button>
+      )}
+
+      {dir && (
+        <button
+          type="button"
+          aria-label="Rolar para a direita"
+          onClick={() => rolar(1)}
+          className={`${seta} right-5`}
+        >
+          <Icon name="next" size={20} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── cabeçalho de tela ───────────────────────────────────────────────── */
+
+/**
+ * Topo fixo de Buscar, Grupos e Mensagens. Existe para as três terem a mesma
+ * estrutura e a mesma altura, com ou sem botão de ação — `min-h-11` na linha
+ * do título garante isso.
+ */
+export function CabecalhoTela({
+  titulo,
+  acao,
+  children,
+}: {
+  titulo: string;
+  acao?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="safe-t sticky top-0 z-20 flex flex-col gap-4 bg-canvas/95 px-4 pb-2 backdrop-blur">
+      <div className="flex min-h-11 items-center gap-3">
+        <h1 className="m-0 min-w-0 flex-1 text-2xl font-bold tracking-tight text-t1">
+          {titulo}
+        </h1>
+        {acao}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** Campo de busca reaproveitado pelas telas de listagem. */
+export function CampoBusca({
+  valor,
+  onChange,
+  placeholder,
+  rotulo,
+}: {
+  valor: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  rotulo: string;
+}) {
+  return (
+    <div className="relative">
+      <label className="sr-only" htmlFor={`busca-${rotulo}`}>
+        {rotulo}
+      </label>
+      <input
+        id={`busca-${rotulo}`}
+        type="search"
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-13 w-full min-w-0 rounded-xl border border-line bg-surface pl-12 pr-12 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
+      />
+      <span className="pointer-events-none absolute left-0 top-0 flex h-13 w-12 items-center justify-center text-t3">
+        <Icon name="search" size={20} />
+      </span>
+      {valor && (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          aria-label="Limpar busca"
+          className="absolute right-1 top-1 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-t3"
+        >
+          <Icon name="close" size={18} stroke={1.8} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── área de texto que cresce com o conteúdo ─────────────────────────── */
+
+/** Textarea que se ajusta à altura do texto, sem cortar nem rolar por dentro. */
+export function AreaTexto({
+  valor,
+  onChange,
+  placeholder,
+  minLinhas = 4,
+  maxAltura = 320,
+  id,
+  rotulo,
+}: {
+  valor: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  minLinhas?: number;
+  maxAltura?: number;
+  id?: string;
+  rotulo?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, maxAltura)}px`;
+    el.style.overflowY = el.scrollHeight > maxAltura ? 'auto' : 'hidden';
+  }, [valor, maxAltura]);
+
+  return (
+    <>
+      {rotulo && (
+        <label htmlFor={id} className="sr-only">
+          {rotulo}
+        </label>
+      )}
+      <textarea
+        id={id}
+        ref={ref}
+        rows={minLinhas}
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="scroll-y w-full min-w-0 shrink-0 resize-none rounded-xl border border-line bg-surface px-4 py-3.5 text-base leading-relaxed text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
+      />
+    </>
   );
 }
 

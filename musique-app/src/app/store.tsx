@@ -34,7 +34,8 @@ export type ViewName =
   | 'editar-perfil' | 'config' | 'post';
 
 export type SheetName =
-  | 'comentarios' | 'compartilhar' | 'menu-post' | 'reacoes' | 'sair' | 'story';
+  | 'comentarios' | 'compartilhar' | 'menu-post' | 'reacoes' | 'sair' | 'story'
+  | 'seguidores';
 
 export type Route = { view: ViewName; params?: Record<string, string> };
 export type Sheet = { name: SheetName; params?: Record<string, string> };
@@ -171,9 +172,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           (async () => {
             patch({ estadoFeed: 'carregando', erroFeed: '' });
             try {
-              let posts = await api.feed();
-              // feed vazio (conta nova, ninguém seguido): mostra o que é público
-              if (posts.length === 0) posts = await api.explorar();
+              // Só o que a pessoa segue, o que ela mesma publicou e os grupos
+              // de que participa. Sem vitrine pública: quem não segue ninguém
+              // vê o estado vazio com sugestões, não o conteúdo dos outros.
+              const posts = await api.feed();
               patch({ feed: posts, estadoFeed: posts.length ? 'ok' : 'vazio' });
             } catch (err) {
               patch({

@@ -3,7 +3,14 @@ import { useApp } from '../app/store';
 import { api } from '../lib/api';
 import { Shell } from '../components/layout/Shell';
 import { GrupoLinha, PessoaLinha } from '../components/domain';
-import { Button, Chip, Icon, Skeleton, Vazio } from '../components/ui';
+import {
+  Button,
+  CabecalhoTela,
+  CampoBusca,
+  Chip,
+  Skeleton,
+  Vazio,
+} from '../components/ui';
 import { SUGESTOES_BUSCA, type Grupo, type Post, type User } from '../data/types';
 
 const TIPOS = ['Tudo', 'Pessoas', 'Grupos', 'Publicações'];
@@ -47,34 +54,13 @@ export function Buscar() {
   return (
     <Shell>
       <div className="flex flex-col gap-5 pb-6">
-        <div className="safe-t sticky top-0 z-20 flex flex-col gap-4 bg-canvas/95 px-4 pb-1 pt-4 backdrop-blur">
-          <h1 className="m-0 text-2xl font-bold tracking-tight text-t1">Buscar</h1>
-
-          <div className="relative">
-            <label htmlFor="q" className="sr-only">
-              Buscar pessoas e grupos
-            </label>
-            <input
-              id="q"
-              type="search"
-              value={s.busca}
-              onChange={(e) => set('busca', e.target.value)}
-              placeholder="O que deseja fazer de bom hoje?"
-              className="h-13 w-full min-w-0 rounded-xl border border-line bg-surface pl-12 pr-12 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
-            />
-            <span className="pointer-events-none absolute left-0 top-0 flex h-13 w-12 items-center justify-center text-t3">
-              <Icon name="search" size={20} />
-            </span>
-            {s.busca && (
-              <button
-                onClick={() => set('busca', '')}
-                aria-label="Limpar busca"
-                className="absolute right-1 top-1 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-t3"
-              >
-                <Icon name="close" size={18} stroke={1.8} />
-              </button>
-            )}
-          </div>
+        <CabecalhoTela titulo="Buscar">
+          <CampoBusca
+            valor={s.busca}
+            onChange={(v) => set('busca', v)}
+            placeholder="O que deseja fazer de bom hoje?"
+            rotulo="Buscar pessoas e grupos"
+          />
 
           <div className="rail -mx-4 px-4">
             <div className="flex w-max gap-2">
@@ -85,7 +71,7 @@ export function Buscar() {
               ))}
             </div>
           </div>
-        </div>
+        </CabecalhoTela>
 
         {!s.busca.trim() && (
           <section className="flex flex-col gap-3 px-4">

@@ -1,7 +1,7 @@
 import { useApp, useAcao } from '../../app/store';
 import { api } from '../../lib/api';
 import type { Comentario, Grupo, Story, User } from '../../data/types';
-import { Avatar, AvatarStack, Button, Icon, Img } from '../ui';
+import { Avatar, AvatarStack, Button, Icon, Img, Rail } from '../ui';
 
 export { PostCard } from './PostCard';
 
@@ -12,8 +12,8 @@ export function StoriesRail({ stories }: { stories: Story[] }) {
 
   return (
     <section aria-label="Stories" className="shrink-0">
-      <div className="rail w-full">
-        <div className="flex w-max gap-3 px-4">
+      <Rail label="Stories">
+        <div className="flex w-max gap-3">
           <button
             onClick={() => go('criar-story')}
             className="flex w-26 shrink-0 cursor-pointer flex-col gap-2 border-0 bg-transparent p-0"
@@ -61,7 +61,7 @@ export function StoriesRail({ stories }: { stories: Story[] }) {
             </button>
           ))}
         </div>
-      </div>
+      </Rail>
     </section>
   );
 }

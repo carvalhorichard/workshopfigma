@@ -146,8 +146,10 @@ function BarraMobile() {
             onClick={() => go(i.view)}
             aria-label={i.label}
             aria-current={on ? 'page' : undefined}
-            className={`relative flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-0 ${
-              on ? 'w-14 text-white' : 'w-11 bg-transparent text-t3'
+            /* largura e altura fixas nos dois estados: só o fundo muda, então
+               a barra não se reorganiza ao trocar de aba */
+            className={`relative flex h-11 w-14 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-0 bg-transparent transition-colors ${
+              on ? 'text-white' : 'text-t3'
             }`}
             style={{ background: on ? 'var(--accent)' : 'transparent' }}
           >
@@ -214,7 +216,7 @@ export function TopBar({
 }) {
   const { back } = useApp();
   return (
-    <header className="safe-t sticky top-0 z-20 flex items-center gap-3 border-b border-elevated bg-canvas/95 px-4 py-3 backdrop-blur">
+    <header className="safe-t sticky top-0 z-20 flex items-center gap-3 border-b border-elevated bg-canvas/95 px-4 pb-3 pt-6 backdrop-blur">
       <button
         onClick={onVoltar ?? back}
         aria-label={fechar ? 'Fechar' : 'Voltar'}

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useApp } from '../app/store';
 import { api, enviarArquivo } from '../lib/api';
 import { Shell, TopBar } from '../components/layout/Shell';
-import { Avatar, Button, Icon, Img } from '../components/ui';
+import { AreaTexto, Avatar, Button, Icon, Img } from '../components/ui';
 
 const hashtags = (t: string) =>
   Array.from(new Set(t.match(/#[\p{L}\p{N}_]+/gu) ?? []));
@@ -164,19 +164,15 @@ export function Criar() {
             </div>
           </div>
 
-          <label htmlFor="legenda" className="sr-only">
-            Legenda da publicação
-          </label>
-          <textarea
+          <AreaTexto
             id="legenda"
-            rows={4}
-            value={texto}
-            onChange={(e) => {
-              setTexto(e.target.value);
+            rotulo="Legenda da publicação"
+            valor={texto}
+            onChange={(v) => {
+              setTexto(v);
               setErro('');
             }}
             placeholder="Conta pra gente. Use #hashtags pra virar tag."
-            className="w-full min-w-0 resize-none rounded-xl border border-line bg-surface px-4 py-3.5 text-base leading-relaxed text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
           />
           {erro && <span className="text-xs text-danger">{erro}</span>}
 

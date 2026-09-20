@@ -91,19 +91,23 @@ export function Icon({
   size = 22,
   className = '',
   stroke = 1.7,
+  preenchido,
 }: {
   name: IconName;
   size?: number;
   className?: string;
   stroke?: number;
+  /** pinta o interior do traço — usado para o estado "curtido"/"salvo" */
+  preenchido?: boolean;
 }) {
   const p = P[name];
+  const solido = p.fill || preenchido;
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill={p.fill ? 'currentColor' : 'none'}
+      fill={solido ? 'currentColor' : 'none'}
       stroke={p.fill ? 'none' : 'currentColor'}
       strokeWidth={stroke}
       strokeLinecap="round"

@@ -58,7 +58,7 @@ export function Notificacoes() {
         }
       />
 
-      <div className="flex flex-col gap-5 py-4">
+      <div className="flex flex-col gap-5 pb-4 pt-6">
         {s.notificacoes.length === 0 && (
           <Vazio
             icone="bell"
@@ -330,7 +330,7 @@ export function Configuracoes() {
     <Shell>
       <TopBar titulo="Configurações" />
 
-      <div className="flex flex-col gap-5 py-4 dk:mx-auto dk:w-full dk:max-w-2xl">
+      <div className="flex flex-col gap-5 pb-4 pt-6 dk:mx-auto dk:w-full dk:max-w-2xl">
         <button
           onClick={() => go('perfil')}
           className="mx-4 flex cursor-pointer items-center gap-3 rounded-2xl border-0 bg-surface p-3 text-left"

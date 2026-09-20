@@ -4,7 +4,12 @@ import { api } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { ComentarioItem } from '../components/domain';
 import { Avatar, Button, Icon, Img, Sheet, Skeleton, Vazio } from '../components/ui';
-import { EMOJIS_REACAO, type Comentario, type Post } from '../data/types';
+import {
+  EMOJIS_REACAO,
+  type Comentario,
+  type Post,
+  type User,
+} from '../data/types';
 
 /** Busca o post do cache do feed ou do banco. */
 function usePost(id?: string) {
@@ -498,6 +503,118 @@ function StoryViewer() {
   );
 }
 
+/* ── seguidores / seguindo ───────────────────────────────────────────── */
+
+function Seguidores() {
+  const { s, fechar, go, toast, recarregar } = useApp();
+  const executar = useAcao();
+  const handle = s.sheet?.params?.handle ?? s.perfil?.handle ?? '';
+  const tipo = (s.sheet?.params?.tipo ?? 'followers') as 'followers' | 'following';
+  const [lista, setLista] = useState<
+    ((User & { segue: boolean; euMesmo: boolean })[]) | null
+  >(null);
+
+  const carregar = useCallback(() => {
+    if (!handle) return;
+    api
+      .listaSeguidores(handle, tipo)
+      .then(setLista)
+      .catch(() => setLista([]));
+  }, [handle, tipo]);
+
+  useEffect(carregar, [carregar]);
+
+  const titulo = tipo === 'followers' ? 'Seguidores' : 'Seguindo';
+
+  return (
+    <Sheet titulo={titulo} onClose={fechar}>
+      {lista === null ? (
+        <div className="flex flex-col gap-2 p-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+          ))}
+        </div>
+      ) : lista.length === 0 ? (
+        <Vazio
+          icone={tipo === 'followers' ? 'users' : 'userplus'}
+          titulo={tipo === 'followers' ? 'Ainda sem seguidores' : 'Não segue ninguém ainda'}
+          texto={
+            tipo === 'followers'
+              ? 'Quando alguém começar a seguir, aparece aqui.'
+              : 'Siga pessoas para o feed começar a encher.'
+          }
+        >
+          {tipo === 'following' && (
+            <Button
+              onClick={() => {
+                fechar();
+                go('buscar');
+              }}
+            >
+              Encontrar pessoas
+            </Button>
+          )}
+        </Vazio>
+      ) : (
+        <ul className="m-0 flex list-none flex-col gap-2 p-4">
+          {lista.map((u) => (
+            <li
+              key={u.id}
+              className="flex items-center gap-3 rounded-2xl bg-surface p-2 pr-3"
+            >
+              <button
+                onClick={() => {
+                  fechar();
+                  go('perfil', { handle: u.handle });
+                }}
+                className="cursor-pointer border-0 bg-transparent p-0"
+                aria-label={`Perfil de ${u.nome}`}
+              >
+                <Avatar src={u.avatar} nome={u.nome} size={48} />
+              </button>
+
+              <button
+                onClick={() => {
+                  fechar();
+                  go('perfil', { handle: u.handle });
+                }}
+                className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5 border-0 bg-transparent p-0 text-left"
+              >
+                <span className="one-line text-sm font-semibold text-t1">{u.nome}</span>
+                <span className="one-line text-xs text-t4">
+                  {u.handle}
+                  {u.bio ? ` · ${u.bio}` : ''}
+                </span>
+              </button>
+
+              {!u.euMesmo && (
+                <Button
+                  tamanho="sm"
+                  variante={u.segue ? 'neutro' : 'primario'}
+                  onClick={() =>
+                    executar(async () => {
+                      const r = await api.seguir(u.id);
+                      toast(
+                        r.following
+                          ? `Seguindo ${u.nome}`
+                          : `Deixou de seguir ${u.nome}`,
+                      );
+                      carregar();
+                      void recarregar({ feed: true, perfil: true });
+                    })
+                  }
+                >
+                  {u.segue ? 'Seguindo' : 'Seguir'}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Sheet>
+  );
+}
+
 /* ── despachante ─────────────────────────────────────────────────────── */
 
 export function Sheets() {
@@ -513,6 +630,8 @@ export function Sheets() {
       return <Reacoes />;
     case 'sair':
       return <Sair />;
+    case 'seguidores':
+      return <Seguidores />;
     case 'story':
       return <StoryViewer />;
     default:

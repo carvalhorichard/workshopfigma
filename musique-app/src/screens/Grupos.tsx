@@ -4,10 +4,13 @@ import { api } from '../lib/api';
 import { Shell, TopBar } from '../components/layout/Shell';
 import { BotaoGrupo, PostCard } from '../components/domain';
 import {
+  AreaTexto,
   Avatar,
   AvatarStack,
   Button,
+  CabecalhoTela,
   Campo,
+  CampoBusca,
   Chip,
   Icon,
   Img,
@@ -66,12 +69,12 @@ function NovoGrupo({ onFechar, onCriado }: { onFechar: () => void; onCriado: () 
           />
         </Campo>
         <Campo label="Descrição" hint="Explique para quem é o grupo.">
-          <textarea
-            rows={3}
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
+          <AreaTexto
+            valor={descricao}
+            onChange={setDescricao}
+            minLinhas={3}
+            maxAltura={200}
             placeholder="Gente que toca e canta junto…"
-            className="w-full resize-none rounded-xl border border-line bg-surface px-4 py-3.5 text-base leading-relaxed text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
           />
         </Campo>
         <label className="flex items-start gap-3 rounded-xl bg-surface p-3 text-sm text-t2">
@@ -119,29 +122,20 @@ export function Grupos() {
   return (
     <Shell>
       <div className="flex flex-col gap-4 pb-6">
-        <div className="safe-t sticky top-0 z-20 flex flex-col gap-4 bg-canvas/95 px-4 pb-1 pt-4 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <h1 className="m-0 min-w-0 flex-1 text-2xl font-bold tracking-tight text-t1">
-              Grupos
-            </h1>
+        <CabecalhoTela
+          titulo="Grupos"
+          acao={
             <Button tamanho="sm" onClick={() => setNovo(true)}>
               <Icon name="plus" size={16} /> Criar
             </Button>
-          </div>
-
-          <div className="relative">
-            <input
-              type="search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar grupos"
-              aria-label="Buscar grupos"
-              className="h-13 w-full rounded-xl border border-line bg-surface pl-12 pr-4 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
-            />
-            <span className="pointer-events-none absolute left-0 top-0 flex h-13 w-12 items-center justify-center text-t3">
-              <Icon name="search" size={20} />
-            </span>
-          </div>
+          }
+        >
+          <CampoBusca
+            valor={q}
+            onChange={setQ}
+            placeholder="Buscar grupos"
+            rotulo="Buscar grupos"
+          />
 
           <div className="rail -mx-4 px-4">
             <div className="flex w-max gap-2">
@@ -156,7 +150,7 @@ export function Grupos() {
               ))}
             </div>
           </div>
-        </div>
+        </CabecalhoTela>
 
         {lista === null ? (
           <div className="grid gap-3 px-4 dk:grid-cols-2 xl:grid-cols-3">
@@ -307,7 +301,8 @@ export function GrupoDetalhe() {
           <div className="absolute inset-0 bg-gradient-to-t from-canvas/90 to-transparent" />
         </div>
 
-        <div className="-mt-12 flex flex-col gap-3 px-4">
+        {/* mesmo motivo do perfil: fica acima da capa `relative` */}
+        <div className="relative z-10 -mt-12 flex flex-col gap-3 px-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 py-1 text-xs text-t2">
               {g.privacidade === 'PRIVATE' && <Icon name="lock" size={12} />}

@@ -6,14 +6,14 @@ import {
   PostCard,
   StoriesRail,
 } from '../components/domain';
-import { Avatar, Button, Icon, IconButton, Skeleton, Vazio } from '../components/ui';
+import { Avatar, Button, Icon, IconButton, Rail, Skeleton, Vazio } from '../components/ui';
 
 function Cabecalho() {
   const { s, go } = useApp();
   const temNova = s.notificacoes.some((n) => !n.lida);
 
   return (
-    <header className="safe-t sticky top-0 z-20 flex h-17 items-center gap-2 bg-canvas/95 px-4 backdrop-blur dk:hidden">
+    <header className="safe-t sticky top-0 z-20 flex min-h-17 items-center gap-2 bg-canvas/95 px-4 pb-2 backdrop-blur dk:hidden">
       <span className="min-w-0 text-2xl font-bold tracking-tight text-t1">Musique</span>
       <div className="flex-1" />
       <IconButton name="plus" label="Criar publicação" size={24} onClick={() => go('criar')} />
@@ -200,13 +200,13 @@ export function Home() {
         {s.grupos.length > 0 && (
           <section className="flex flex-col gap-3">
             <TituloSecao titulo="Comunidades" acao="Ver todas" onAcao={() => go('grupos')} />
-            <div className="rail w-full">
-              <div className="flex w-max items-stretch gap-3 px-4">
+            <Rail label="Comunidades">
+              <div className="flex w-max items-stretch gap-3">
                 {s.grupos.slice(0, 8).map((g) => (
                   <ComunidadeCard key={g.id} g={g} />
                 ))}
               </div>
-            </div>
+            </Rail>
           </section>
         )}
 

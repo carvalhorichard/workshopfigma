@@ -75,6 +75,8 @@ img {
   overflow-y: hidden;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  /* impede que a rolagem do trilho vire "voltar" no navegador */
+  overscroll-behavior-x: contain;
 }
 .rail::-webkit-scrollbar {
   display: none;
@@ -83,6 +85,10 @@ img {
 /* rolagem vertical discreta nas colunas do desktop */
 .scroll-y {
   overflow-y: auto;
+  /* explícito: sem isso o CSS promove overflow-x a `auto` sozinho quando o
+     outro eixo não é `visible`, e a página inteira passa a rolar de lado
+     em vez de o trilho rolar dentro dela */
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--color-line-strong) transparent;
 }
@@ -110,12 +116,16 @@ img {
   overflow: hidden;
 }
 
-/* áreas seguras (notch / barra de gestos) */
+/* Áreas seguras (notch / barra de gestos).
+   Estas classes ficam fora de @layer, então vencem as utilities do Tailwind:
+   um `pt-6` no mesmo elemento seria descartado. Por isso são PISOS, com
+   `max()` — garantem o respiro mínimo em qualquer aparelho e ainda cedem
+   espaço extra quando o recorte da tela exige. */
 .safe-t {
-  padding-top: env(safe-area-inset-top);
+  padding-top: max(env(safe-area-inset-top), 1.5rem); /* ≥ 24px */
 }
 .safe-b {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: max(env(safe-area-inset-bottom), 1.25rem); /* ≥ 20px */
 }
 
 @keyframes mq-fade {
@@ -163,6 +173,22 @@ img {
   animation: mq-pop 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* pulo curto ao curtir/salvar — confirma o toque sem atrapalhar a leitura */
+@keyframes mq-curtir {
+  0% {
+    transform: scale(0.8);
+  }
+  45% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.anim-curtir {
+  animation: mq-curtir 320ms cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -178,6 +204,7 @@ img {
   .anim-fade,
   .anim-sheet-up,
   .anim-pop,
+  .anim-curtir,
   .skeleton {
     animation: none;
   }

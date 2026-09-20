@@ -1,39 +1,98 @@
 import { useState } from 'react';
 import { useApp } from '../app/store';
 import { auth } from '../lib/api';
-import { Button, Campo, Icon, entradaCls } from '../components/ui';
+import { Button, Campo, Icon, Img, entradaCls } from '../components/ui';
+import { FOTO_CADASTRO, FOTO_LOGIN, fotoUrl, type Foto } from '../data/fotos';
 
-/** Moldura comum: painel à esquerda no desktop, topo no mobile. */
+/** Crédito do fotógrafo — exigido pelas diretrizes da Unsplash. */
+function Credito({ foto, className = '' }: { foto: Foto; className?: string }) {
+  return (
+    <span className={`text-[11px] leading-none text-white/55 ${className}`}>
+      Foto de{' '}
+      <a
+        href={foto.autorUrl}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="text-white/75 underline decoration-white/25 underline-offset-2"
+      >
+        {foto.autor}
+      </a>{' '}
+      na{' '}
+      <a
+        href="https://unsplash.com"
+        target="_blank"
+        rel="noreferrer noopener"
+        className="text-white/75 underline decoration-white/25 underline-offset-2"
+      >
+        Unsplash
+      </a>
+    </span>
+  );
+}
+
+/**
+ * Moldura comum: no desktop a foto ocupa a coluna da esquerda; no mobile vira
+ * uma faixa no topo, com altura menor no cadastro — lá o formulário é longo.
+ */
 function Moldura({
   children,
   titulo,
   subtitulo,
+  foto,
+  alturaMobile = 'h-52',
 }: {
   children: React.ReactNode;
   titulo: string;
   subtitulo: string;
+  foto: Foto;
+  alturaMobile?: string;
 }) {
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-canvas">
-      <div className="relative hidden flex-1 dk:flex dk:items-end">
+      {/* desktop: foto em tela cheia na esquerda */}
+      <div className="relative hidden flex-1 overflow-hidden dk:flex dk:items-end">
+        <div className="absolute inset-0">
+          <Img src={fotoUrl(foto, 1400)} alt={foto.alt} loading="eager" />
+        </div>
         <div
           aria-hidden
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(120% 100% at 20% 0%, var(--accent-soft) 0%, transparent 55%), linear-gradient(160deg, #242326 0%, #19181B 60%)',
+              'linear-gradient(to top, rgba(25,24,27,.94) 0%, rgba(25,24,27,.45) 45%, rgba(25,24,27,.15) 100%),' +
+              'radial-gradient(120% 90% at 15% 0%, var(--accent-soft) 0%, transparent 60%)',
           }}
         />
-        <div className="relative p-10">
+        <div className="relative w-full p-10 pb-14">
           <span className="text-3xl font-bold tracking-tight text-t1">Musique</span>
-          <p className="m-0 mt-3 max-w-md text-xl font-medium leading-snug text-t2">
+          <p className="m-0 mt-3 max-w-lg text-2xl font-medium leading-snug text-t2">
             A rede das pessoas que tocam, gravam e ouvem junto.
           </p>
         </div>
+        <Credito foto={foto} className="absolute bottom-4 right-6" />
       </div>
 
+      {/* coluna do formulário */}
       <div className="scroll-y flex w-full flex-col dk:w-[480px] dk:shrink-0 dk:border-l dk:border-elevated">
-        <div className="safe-t mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 p-6 dk:p-10">
+        {/* mobile: faixa no topo */}
+        <div
+          className={`safe-t relative w-full shrink-0 overflow-hidden px-4 pt-4 dk:hidden`}
+        >
+          <div className={`relative ${alturaMobile} w-full overflow-hidden rounded-[20px] bg-surface`}>
+            <Img src={fotoUrl(foto, 800)} alt={foto.alt} loading="eager" />
+            <div
+              aria-hidden
+              className="absolute inset-0"
+              style={{
+                background:
+                  'linear-gradient(to top, rgba(25,24,27,.85) 0%, rgba(25,24,27,.1) 60%)',
+              }}
+            />
+            <Credito foto={foto} className="absolute bottom-2.5 right-3" />
+          </div>
+        </div>
+
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 p-6 dk:p-10">
           <div className="flex flex-col gap-2">
             <h1 className="m-0 text-3xl font-bold tracking-tight text-t1">{titulo}</h1>
             <p className="m-0 max-w-[34ch] text-sm leading-relaxed text-t3">{subtitulo}</p>
@@ -80,7 +139,11 @@ export function Login() {
   }
 
   return (
-    <Moldura titulo="Musique" subtitulo="Bem-vindo de volta. Compartilhe um pouco do seu dia.">
+    <Moldura
+      titulo="Musique"
+      subtitulo="Bem-vindo de volta. Compartilhe um pouco do seu dia."
+      foto={FOTO_LOGIN}
+    >
       <form onSubmit={entrar} className="flex flex-col gap-3">
         <Campo label="E-mail">
           <input
@@ -187,6 +250,8 @@ export function Cadastro() {
     <Moldura
       titulo="Criar conta"
       subtitulo="Leva menos de um minuto. Depois é só escolher suas comunidades."
+      foto={FOTO_CADASTRO}
+      alturaMobile="h-36"
     >
       <form onSubmit={criar} className="flex flex-col gap-3">
         <Campo label="Nome" erro={erros.nome}>

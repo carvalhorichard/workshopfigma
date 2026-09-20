@@ -311,6 +311,23 @@ export const api = {
     };
   },
 
+  /** Lista de seguidores ou de quem a pessoa segue. */
+  async listaSeguidores(
+    handle: string,
+    tipo: 'followers' | 'following',
+  ): Promise<(User & { segue: boolean; euMesmo: boolean })[]> {
+    const j = await rpc<Json[]>('get_follow_list', {
+      p_handle: handle.replace('@', ''),
+      p_tipo: tipo,
+    });
+    return j.map((p) => ({
+      ...paraUser(p),
+      bio: p.bio,
+      segue: !!p.following,
+      euMesmo: !!p.is_me,
+    }));
+  },
+
   async sugestoes(): Promise<User[]> {
     return (await rpc<Json[]>('get_suggestions')).map((p) => ({
       ...paraUser(p),
