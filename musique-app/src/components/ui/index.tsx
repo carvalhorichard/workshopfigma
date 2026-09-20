@@ -389,6 +389,149 @@ export function AreaTexto({
   );
 }
 
+/* ── câmera do aparelho ─────────────────────────────────── */
+
+/**
+ * Prévia ao vivo da câmera com botão de disparo.
+ *
+ * Usa getUserMedia, que roda em https (ou localhost). As trilhas são
+ * encerradas ao sair — sem isso a luz da câmera fica acesa depois de fechar.
+ */
+export function CapturaCamera({
+  onFoto,
+  onFechar,
+}: {
+  onFoto: (f: File) => void;
+  onFechar: () => void;
+}) {
+  const video = useRef<HTMLVideoElement>(null);
+  const trilhas = useRef<MediaStream | null>(null);
+  const [erro, setErro] = useState('');
+  const [pronta, setPronta] = useState(false);
+  const [frontal, setFrontal] = useState(false);
+
+  const encerrar = useCallback(() => {
+    trilhas.current?.getTracks().forEach((t) => t.stop());
+    trilhas.current = null;
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    (async () => {
+      encerrar();
+      setPronta(false);
+      setErro('');
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: frontal ? 'user' : { ideal: 'environment' } },
+          audio: false,
+        });
+        if (cancelado) {
+          s.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        trilhas.current = s;
+        if (video.current) {
+          video.current.srcObject = s;
+          await video.current.play().catch(() => {});
+        }
+        setPronta(true);
+      } catch (e) {
+        const nome = (e as DOMException)?.name;
+        setErro(
+          nome === 'NotAllowedError'
+            ? 'Permissão de câmera negada. Libere o acesso nas configurações do navegador.'
+            : nome === 'NotFoundError'
+              ? 'Nenhuma câmera encontrada neste aparelho.'
+              : 'Não foi possível abrir a câmera.',
+        );
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+      encerrar();
+    };
+  }, [frontal, encerrar]);
+
+  function disparar() {
+    const v = video.current;
+    if (!v || !v.videoWidth) return;
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth;
+    c.height = v.videoHeight;
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
+    if (frontal) {
+      // espelha, para a foto sair como a pessoa se via na tela
+      ctx.translate(c.width, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(v, 0, 0);
+    c.toBlob(
+      (b) => {
+        if (!b) return;
+        encerrar();
+        onFoto(new File([b], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+      },
+      'image/jpeg',
+      0.9,
+    );
+  }
+
+  return (
+    <div className="anim-fade fixed inset-0 z-[60] flex flex-col bg-black">
+      <div className="safe-t flex items-center gap-3 px-4 pb-3">
+        <span className="min-w-0 flex-1 text-sm font-medium text-white/90">Tirar foto</span>
+        <button
+          onClick={onFechar}
+          aria-label="Fechar câmera"
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur"
+        >
+          <Icon name="close" size={20} />
+        </button>
+      </div>
+
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-black">
+        {erro ? (
+          <p className="m-0 max-w-[36ch] px-6 text-center text-sm leading-relaxed text-white/80">
+            {erro}
+          </p>
+        ) : (
+          <video
+            ref={video}
+            playsInline
+            muted
+            className="max-h-full max-w-full"
+            style={{ transform: frontal ? 'scaleX(-1)' : undefined }}
+          />
+        )}
+      </div>
+
+      <div className="safe-b flex items-center justify-center gap-8 px-4 pt-4">
+        <button
+          onClick={() => setFrontal((f) => !f)}
+          disabled={!!erro}
+          aria-label="Virar câmera"
+          className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur disabled:opacity-40"
+        >
+          <Icon name="refresh" size={20} />
+        </button>
+
+        <button
+          onClick={disparar}
+          disabled={!pronta}
+          aria-label="Tirar foto"
+          className="h-18 w-18 cursor-pointer rounded-full border-4 border-white bg-white/25 backdrop-blur transition-transform active:scale-95 disabled:opacity-40"
+        />
+
+        <span className="h-12 w-12" aria-hidden />
+      </div>
+    </div>
+  );
+}
+
 /* ── seletor de imagem com upload ────────────────────────────────────── */
 
 /**
@@ -401,20 +544,26 @@ export function SeletorImagem({
   aspecto = '4 / 3',
   rotulo = 'Adicionar foto',
   className = '',
+  camera,
 }: {
   url: string | null;
   onUrl: (u: string | null) => void;
   aspecto?: string;
   rotulo?: string;
   className?: string;
+  /** oferece tirar foto na hora, além de escolher da galeria */
+  camera?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
+  const [capturando, setCapturando] = useState(false);
 
-  async function escolher(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  // getUserMedia exige https (ou localhost); sem ele, caímos no input nativo
+  const temCamera =
+    typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+
+  async function subir(f: File) {
     setErro('');
     setEnviando(true);
     try {
@@ -424,8 +573,14 @@ export function SeletorImagem({
       setErro(err instanceof Error ? err.message : 'Falha no upload');
     } finally {
       setEnviando(false);
-      if (input.current) input.current.value = '';
     }
+  }
+
+  async function escolher(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (input.current) input.current.value = '';
+    if (!f) return;
+    await subir(f);
   }
 
   return (
@@ -434,6 +589,7 @@ export function SeletorImagem({
         ref={input}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
+        {...(camera && !temCamera ? { capture: 'environment' as const } : {})}
         onChange={escolher}
         className="hidden"
       />
@@ -464,20 +620,50 @@ export function SeletorImagem({
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          disabled={enviando}
-          onClick={() => input.current?.click()}
-          className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-surface text-t3 disabled:opacity-60"
+        <div
+          className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line-strong bg-surface p-4 text-t3"
           style={{ aspectRatio: aspecto }}
         >
           <Icon name={enviando ? 'refresh' : 'image'} size={28} />
           <span className="text-sm">{enviando ? 'Enviando…' : rotulo}</span>
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {camera && (
+              <Button
+                type="button"
+                tamanho="sm"
+                disabled={enviando}
+                onClick={() => (temCamera ? setCapturando(true) : input.current?.click())}
+              >
+                <Icon name="camera" size={16} /> Tirar foto
+              </Button>
+            )}
+            <Button
+              type="button"
+              tamanho="sm"
+              variante="neutro"
+              disabled={enviando}
+              onClick={() => input.current?.click()}
+            >
+              <Icon name="image" size={16} /> {camera ? 'Da galeria' : 'Escolher arquivo'}
+            </Button>
+          </div>
+
           <span className="text-xs text-t5">JPG, PNG ou WebP até 5 MB</span>
-        </button>
+        </div>
       )}
 
       {erro && <span className="text-xs text-danger">{erro}</span>}
+
+      {capturando && (
+        <CapturaCamera
+          onFechar={() => setCapturando(false)}
+          onFoto={async (f) => {
+            setCapturando(false);
+            await subir(f);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -555,6 +741,52 @@ export function Campo({
 
 export const entradaCls =
   'h-13 w-full min-w-0 rounded-xl border border-line bg-surface px-4 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300';
+
+/* ── campo de senha ───────────────────────────────────────── */
+
+/** Senha com olho para revelar o que foi digitado. */
+export function CampoSenha({
+  valor,
+  onChange,
+  placeholder = '••••••••',
+  autoComplete = 'current-password',
+  id,
+  required,
+}: {
+  valor: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  autoComplete?: string;
+  id?: string;
+  required?: boolean;
+}) {
+  const [visivel, setVisivel] = useState(false);
+
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        type={visivel ? 'text' : 'password'}
+        autoComplete={autoComplete}
+        required={required}
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`${entradaCls} pr-13`}
+      />
+      <button
+        type="button"
+        onClick={() => setVisivel((v) => !v)}
+        aria-label={visivel ? 'Ocultar senha' : 'Mostrar senha'}
+        aria-pressed={visivel}
+        title={visivel ? 'Ocultar senha' : 'Mostrar senha'}
+        className="absolute right-1 top-1 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-t3 transition-colors hover:text-t1"
+      >
+        <Icon name={visivel ? 'eyeoff' : 'eye'} size={20} />
+      </button>
+    </div>
+  );
+}
 
 /* ── abas ────────────────────────────────────────────────────────────── */
 

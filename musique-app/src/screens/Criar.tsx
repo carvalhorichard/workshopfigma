@@ -212,7 +212,13 @@ export function CriarStory() {
         <TopBar titulo="Novo story" fechar onVoltar={back} />
 
         <div className="scroll-y flex min-h-0 flex-1 flex-col gap-4 p-4 dk:mx-auto dk:w-full dk:max-w-lg">
-          <SeletorImagem url={media} onUrl={setMedia} aspecto="9 / 16" />
+          <SeletorImagem
+            url={media}
+            onUrl={setMedia}
+            aspecto="9 / 16"
+            rotulo="Foto do story"
+            camera
+          />
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-t3">Legenda do story</span>

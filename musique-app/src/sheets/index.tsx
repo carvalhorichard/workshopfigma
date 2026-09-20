@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApp, useAcao } from '../app/store';
 import { api } from '../lib/api';
-import { supabase } from '../lib/supabase';
 import { ComentarioItem } from '../components/domain';
 import { Avatar, Button, Icon, Img, Sheet, Skeleton, Vazio } from '../components/ui';
 import {
@@ -290,11 +289,7 @@ function MenuPost() {
             <button
               onClick={() =>
                 acao(async () => {
-                  const { error } = await supabase
-                    .from('posts')
-                    .update({ deleted_at: new Date().toISOString() })
-                    .eq('id', post.id);
-                  if (error) throw new Error(error.message);
+                  await api.apagarPost(post.id);
                   await recarregar({ feed: true, perfil: true });
                   toast('Publicação apagada');
                   fechar();
@@ -394,7 +389,7 @@ function Sair() {
 /* ── visualizador de story ───────────────────────────────────────────── */
 
 function StoryViewer() {
-  const { s, fechar, go, toast } = useApp();
+  const { s, fechar, go, toast, recarregar } = useApp();
 
   // posicao: qual pessoa e qual story dentro dela
   const grupoInicial = Math.max(
@@ -405,9 +400,12 @@ function StoryViewer() {
   const [si, setSi] = useState(s.stories[grupoInicial]?.inicio ?? 0);
   const [pausado, setPausado] = useState(false);
   const [progresso, setProgresso] = useState(0);
+  const [confirmando, setConfirmando] = useState(false);
+  const [apagando, setApagando] = useState(false);
 
   const grupo = s.stories[gi];
   const story = grupo?.stories[si];
+  const meu = grupo?.autor.id === s.perfil?.id;
 
   // avanca dentro da pessoa; no fim dela, passa para a proxima
   const proximo = useCallback(() => {
@@ -431,18 +429,19 @@ function StoryViewer() {
   useEffect(() => setProgresso(0), [gi, si]);
 
   useEffect(() => {
-    if (pausado || !story) return;
+    if (pausado || confirmando || !story) return;
     const t = setInterval(() => {
-      setProgresso((p) => {
-        if (p >= 100) {
-          proximo();
-          return 0;
-        }
-        return p + 2;
-      });
+      // só avança o contador aqui; trocar de story dentro do updater do
+      // setState significa mexer noutro componente durante a renderização
+      setProgresso((p) => (p >= 100 ? 100 : p + 2));
     }, 90);
     return () => clearInterval(t);
-  }, [pausado, story, proximo]);
+  }, [pausado, confirmando, story]);
+
+  // quando a barra enche, passa para o próximo — já fora do render
+  useEffect(() => {
+    if (progresso >= 100) proximo();
+  }, [progresso, proximo]);
 
   // marca como visto uma vez por story
   const idAtual = story?.id;
@@ -504,6 +503,15 @@ function StoryViewer() {
               </span>
             </span>
           </button>
+          {meu && (
+            <button
+              onClick={() => setConfirmando(true)}
+              aria-label="Apagar story"
+              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-black/40 text-white"
+            >
+              <Icon name="trash" size={18} />
+            </button>
+          )}
           <button
             onClick={() => setPausado((p) => !p)}
             aria-label={pausado ? 'Continuar' : 'Pausar'}
@@ -519,6 +527,44 @@ function StoryViewer() {
             <Icon name="close" size={20} />
           </button>
         </div>
+
+        {confirmando && (
+          <div className="anim-fade absolute inset-0 z-20 flex items-center justify-center bg-black/80 p-6">
+            <div className="anim-pop w-full max-w-xs rounded-2xl border border-line bg-canvas p-5">
+              <h2 className="m-0 text-base font-semibold text-t1">Apagar este story?</h2>
+              <p className="m-0 mt-2 text-sm leading-relaxed text-t3">
+                Ele sai do ar para todo mundo. Não dá para desfazer.
+              </p>
+              <div className="mt-4 flex flex-col gap-2">
+                <Button
+                  variante="perigo"
+                  bloco
+                  disabled={apagando}
+                  onClick={async () => {
+                    if (!story) return;
+                    setApagando(true);
+                    try {
+                      await api.apagarStory(story.id);
+                      await recarregar({ stories: true });
+                      toast('Story apagado');
+                      fechar();
+                    } catch (err) {
+                      toast(err instanceof Error ? err.message : 'Não deu para apagar');
+                    } finally {
+                      setApagando(false);
+                      setConfirmando(false);
+                    }
+                  }}
+                >
+                  {apagando ? 'Apagando…' : 'Apagar story'}
+                </Button>
+                <Button variante="neutro" bloco onClick={() => setConfirmando(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <button
           aria-label="Story anterior"

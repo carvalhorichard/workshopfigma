@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../app/store';
 import { auth } from '../lib/api';
-import { Button, Campo, Icon, Img, entradaCls } from '../components/ui';
+import { Button, Campo, CampoSenha, Icon, Img, entradaCls } from '../components/ui';
 import { FOTO_CADASTRO, FOTO_LOGIN, fotoUrl, type Foto } from '../data/fotos';
 
 /** Crédito do fotógrafo — exigido pelas diretrizes da Unsplash. */
@@ -157,15 +157,7 @@ export function Login() {
           />
         </Campo>
         <Campo label="Senha" erro={erro}>
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            placeholder="••••••••"
-            className={entradaCls}
-          />
+          <CampoSenha valor={senha} onChange={setSenha} required />
         </Campo>
 
         <div className="flex min-h-11 items-center justify-end">
@@ -283,11 +275,19 @@ export function Cadastro() {
         </Campo>
 
         <Campo label="Senha" hint="Mínimo de 6 caracteres." erro={erros.senha}>
-          <input {...campo('senha')} type="password" placeholder="••••••••" className={entradaCls} />
+          <CampoSenha
+            valor={v.senha}
+            onChange={(x) => setV({ ...v, senha: x })}
+            autoComplete="new-password"
+          />
         </Campo>
 
         <Campo label="Confirmar senha" erro={erros.senha2}>
-          <input {...campo('senha2')} type="password" placeholder="••••••••" className={entradaCls} />
+          <CampoSenha
+            valor={v.senha2}
+            onChange={(x) => setV({ ...v, senha2: x })}
+            autoComplete="new-password"
+          />
         </Campo>
 
         <label className="flex items-start gap-3 py-1 text-sm leading-relaxed text-t2">

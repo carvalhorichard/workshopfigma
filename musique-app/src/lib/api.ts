@@ -402,6 +402,14 @@ export const api = {
     return paraPost(j);
   },
 
+  /**
+   * Apagar passa por RPC, não por UPDATE direto: a policy de SELECT exige
+   * `deleted_at IS NULL`, então marcar a linha como apagada pelo cliente
+   * seria recusado pelo próprio RLS. Ver migração 17.
+   */
+  apagarStory: (id: string) => rpc<void>('delete_story', { p_id: id }),
+  apagarPost: (id: string) => rpc<void>('delete_post', { p_id: id }),
+
   publicarStory: (mediaUrl: string, legenda: string) =>
     rpc<Json>('create_story', { p_media_url: mediaUrl, p_caption: legenda }),
 
