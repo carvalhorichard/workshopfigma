@@ -8,6 +8,7 @@ import type {
   Comentario,
   Conversa,
   Grupo,
+  GrupoStories,
   Mensagem,
   Notificacao,
   Perfil,
@@ -174,8 +175,13 @@ export const api = {
     return (await rpc<Json[]>('get_bookmarks')).map(paraPost);
   },
 
-  async stories(): Promise<Story[]> {
-    return (await rpc<Json[]>('get_stories')).map((j) => ({
+  /**
+   * Stories agrupados por autor: cada pessoa vira um card só no trilho.
+   * Dentro do grupo ficam em ordem cronológica, e quem ainda tem story novo
+   * aparece antes de quem já foi visto por inteiro.
+   */
+  async stories(): Promise<GrupoStories[]> {
+    const planos: Story[] = (await rpc<Json[]>('get_stories')).map((j) => ({
       id: j.id,
       autor: paraUser(j.author),
       img: j.media_url ?? null,
@@ -183,6 +189,31 @@ export const api = {
       tempo: tempoRelativo(j.created_at),
       visto: !!j.seen,
     }));
+
+    const porAutor = new Map<string, Story[]>();
+    for (const st of planos) {
+      const lista = porAutor.get(st.autor.id);
+      if (lista) lista.push(st);
+      else porAutor.set(st.autor.id, [st]);
+    }
+
+    const grupos: GrupoStories[] = [...porAutor.values()].map((lista) => {
+      // get_stories devolve do mais novo para o mais velho; dentro do card a
+      // leitura é cronológica, como nas outras redes
+      const stories = [...lista].reverse();
+      const naoVisto = stories.findIndex((x) => !x.visto);
+      const inicio = naoVisto === -1 ? 0 : naoVisto;
+      return {
+        autor: stories[0].autor,
+        stories,
+        todosVistos: naoVisto === -1,
+        capa: stories[inicio].img,
+        inicio,
+      };
+    });
+
+    // quem tem novidade primeiro
+    return grupos.sort((a, b) => Number(a.todosVistos) - Number(b.todosVistos));
   },
 
   async perfil(handle: string): Promise<Perfil | null> {
@@ -212,6 +243,7 @@ export const api = {
     if (!j) return null;
     return {
       ...paraGrupo(j),
+      papel: j.my_role ?? null,
       membrosLista: (j.members ?? []).map((m: Json) => ({
         ...paraUser(m),
         contexto: m.role === 'OWNER' ? 'Criador' : m.role === 'ADMIN' ? 'Admin' : '',
@@ -383,6 +415,18 @@ export const api = {
 
   enviarMensagem: (conversaId: string, texto: string) =>
     rpc<Json>('send_message', { p_conversation_id: conversaId, p_body: texto }),
+
+  editarGrupo: (
+    grupoId: string,
+    d: { nome?: string; descricao?: string; cover?: string | null; privado?: boolean },
+  ) =>
+    rpc<Json>('update_group', {
+      p_group_id: grupoId,
+      p_name: d.nome ?? null,
+      p_description: d.descricao ?? null,
+      p_cover_url: d.cover ?? null,
+      p_privacy: d.privado === undefined ? null : d.privado ? 'PRIVATE' : 'PUBLIC',
+    }),
 
   criarGrupo: (nome: string, descricao: string, privado: boolean, cover?: string | null) =>
     rpc<Json>('create_group', {

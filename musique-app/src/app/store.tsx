@@ -24,7 +24,7 @@ import type {
   Notificacao,
   Perfil,
   Post,
-  Story,
+  GrupoStories,
   User,
 } from '../data/types';
 
@@ -35,7 +35,7 @@ export type ViewName =
 
 export type SheetName =
   | 'comentarios' | 'compartilhar' | 'menu-post' | 'reacoes' | 'sair' | 'story'
-  | 'seguidores';
+  | 'seguidores' | 'imagem';
 
 export type Route = { view: ViewName; params?: Record<string, string> };
 export type Sheet = { name: SheetName; params?: Record<string, string> };
@@ -54,7 +54,7 @@ type Estado = {
   feed: Post[];
   estadoFeed: EstadoFeed;
   erroFeed: string;
-  stories: Story[];
+  stories: GrupoStories[];
   grupos: Grupo[];
   conversas: Conversa[];
   notificacoes: Notificacao[];

@@ -1,84 +1,11 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useApp } from '../app/store';
-import { api, enviarArquivo } from '../lib/api';
+import { api } from '../lib/api';
 import { Shell, TopBar } from '../components/layout/Shell';
-import { AreaTexto, Avatar, Button, Icon, Img } from '../components/ui';
+import { AreaTexto, Avatar, Button, Icon, SeletorImagem } from '../components/ui';
 
 const hashtags = (t: string) =>
   Array.from(new Set(t.match(/#[\p{L}\p{N}_]+/gu) ?? []));
-
-/** Seletor de imagem com upload real para o bucket `media`. */
-function EscolherImagem({
-  url,
-  onUrl,
-  aspecto = '4 / 3',
-}: {
-  url: string | null;
-  onUrl: (u: string | null) => void;
-  aspecto?: string;
-}) {
-  const input = useRef<HTMLInputElement>(null);
-  const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState('');
-
-  async function escolher(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setErro('');
-    setEnviando(true);
-    try {
-      onUrl(await enviarArquivo(f));
-    } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Falha no upload');
-    } finally {
-      setEnviando(false);
-      if (input.current) input.current.value = '';
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <input
-        ref={input}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        onChange={escolher}
-        className="hidden"
-      />
-
-      {url ? (
-        <div
-          className="relative w-full shrink-0 overflow-hidden rounded-xl bg-elevated"
-          style={{ aspectRatio: aspecto }}
-        >
-          <Img src={url} alt="Prévia da mídia selecionada" />
-          <button
-            type="button"
-            onClick={() => onUrl(null)}
-            aria-label="Remover mídia"
-            className="absolute right-2 top-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-canvas/70 text-white"
-          >
-            <Icon name="close" size={18} stroke={1.8} />
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          disabled={enviando}
-          onClick={() => input.current?.click()}
-          className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-surface text-t3 disabled:opacity-60"
-          style={{ aspectRatio: aspecto }}
-        >
-          <Icon name={enviando ? 'refresh' : 'image'} size={28} />
-          <span className="text-sm">{enviando ? 'Enviando…' : 'Adicionar foto'}</span>
-          <span className="text-xs text-t5">JPG, PNG ou WebP até 5 MB</span>
-        </button>
-      )}
-
-      {erro && <span className="text-xs text-danger">{erro}</span>}
-    </div>
-  );
-}
 
 export function Criar() {
   const { s, rota, back, go, toast, recarregar } = useApp();
@@ -189,7 +116,7 @@ export function Criar() {
             </div>
           )}
 
-          <EscolherImagem url={media} onUrl={setMedia} />
+          <SeletorImagem url={media} onUrl={setMedia} />
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-t3">Local</span>
@@ -285,7 +212,7 @@ export function CriarStory() {
         <TopBar titulo="Novo story" fechar onVoltar={back} />
 
         <div className="scroll-y flex min-h-0 flex-1 flex-col gap-4 p-4 dk:mx-auto dk:w-full dk:max-w-lg">
-          <EscolherImagem url={media} onUrl={setMedia} aspecto="9 / 16" />
+          <SeletorImagem url={media} onUrl={setMedia} aspecto="9 / 16" />
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-t3">Legenda do story</span>

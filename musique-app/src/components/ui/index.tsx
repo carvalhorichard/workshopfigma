@@ -389,6 +389,99 @@ export function AreaTexto({
   );
 }
 
+/* ── seletor de imagem com upload ────────────────────────────────────── */
+
+/**
+ * Área clicável que envia o arquivo para o bucket `media` e devolve a URL
+ * pública. Usada na publicação, no story, na capa do grupo e no perfil.
+ */
+export function SeletorImagem({
+  url,
+  onUrl,
+  aspecto = '4 / 3',
+  rotulo = 'Adicionar foto',
+  className = '',
+}: {
+  url: string | null;
+  onUrl: (u: string | null) => void;
+  aspecto?: string;
+  rotulo?: string;
+  className?: string;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState('');
+
+  async function escolher(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setErro('');
+    setEnviando(true);
+    try {
+      const { enviarArquivo } = await import('../../lib/api');
+      onUrl(await enviarArquivo(f));
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Falha no upload');
+    } finally {
+      setEnviando(false);
+      if (input.current) input.current.value = '';
+    }
+  }
+
+  return (
+    <div className={`flex flex-col gap-2 ${className}`}>
+      <input
+        ref={input}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        onChange={escolher}
+        className="hidden"
+      />
+
+      {url ? (
+        <div
+          className="relative w-full shrink-0 overflow-hidden rounded-xl bg-elevated"
+          style={{ aspectRatio: aspecto }}
+        >
+          <Img src={url} alt="Prévia da imagem selecionada" />
+          <div className="absolute right-2 top-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => input.current?.click()}
+              aria-label="Trocar imagem"
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-canvas/70 text-white backdrop-blur"
+            >
+              <Icon name="camera" size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onUrl(null)}
+              aria-label="Remover imagem"
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-canvas/70 text-white backdrop-blur"
+            >
+              <Icon name="close" size={18} stroke={1.8} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={enviando}
+          onClick={() => input.current?.click()}
+          className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-surface text-t3 disabled:opacity-60"
+          style={{ aspectRatio: aspecto }}
+        >
+          <Icon name={enviando ? 'refresh' : 'image'} size={28} />
+          <span className="text-sm">{enviando ? 'Enviando…' : rotulo}</span>
+          <span className="text-xs text-t5">JPG, PNG ou WebP até 5 MB</span>
+        </button>
+      )}
+
+      {erro && <span className="text-xs text-danger">{erro}</span>}
+    </div>
+  );
+}
+
 /* ── chips e tags ────────────────────────────────────────────────────── */
 
 export function Chip({

@@ -1,13 +1,13 @@
 import { useApp, useAcao } from '../../app/store';
 import { api } from '../../lib/api';
-import type { Comentario, Grupo, Story, User } from '../../data/types';
+import type { Comentario, Grupo, GrupoStories, User } from '../../data/types';
 import { Avatar, AvatarStack, Button, Icon, Img, Rail } from '../ui';
 
 export { PostCard } from './PostCard';
 
 /* ── trilho de stories ───────────────────────────────────────────────── */
 
-export function StoriesRail({ stories }: { stories: Story[] }) {
+export function StoriesRail({ stories }: { stories: GrupoStories[] }) {
   const { s, abrir, go } = useApp();
 
   return (
@@ -20,11 +20,7 @@ export function StoriesRail({ stories }: { stories: Story[] }) {
           >
             <span className="flex h-38 w-26 items-center justify-center rounded-[20px] border border-dashed border-line-strong bg-surface">
               <span className="relative block h-11 w-11">
-                <Avatar
-                  src={s.perfil?.avatar}
-                  nome={s.perfil?.nome ?? '?'}
-                  size={44}
-                />
+                <Avatar src={s.perfil?.avatar} nome={s.perfil?.nome ?? '?'} size={44} />
                 <span
                   className="absolute -bottom-1 -right-1 flex h-5.5 w-5.5 items-center justify-center rounded-full border-2 border-surface text-white"
                   style={{ background: 'var(--accent)' }}
@@ -38,25 +34,49 @@ export function StoriesRail({ stories }: { stories: Story[] }) {
             </span>
           </button>
 
-          {stories.map((st) => (
+          {/* um card por pessoa: a capa é o primeiro story ainda não visto */}
+          {stories.map((g) => (
             <button
-              key={st.id}
-              onClick={() => abrir('story', { storyId: st.id })}
+              key={g.autor.id}
+              onClick={() => abrir('story', { autorId: g.autor.id })}
+              aria-label={`Stories de ${g.autor.nome}, ${g.stories.length} ${
+                g.stories.length === 1 ? 'item' : 'itens'
+              }`}
               className="flex w-26 shrink-0 cursor-pointer flex-col gap-2 border-0 bg-transparent p-0"
             >
               <span className="relative block h-38 w-26 overflow-hidden rounded-[20px] bg-surface">
-                <Img src={st.img} alt={st.legenda} />
+                <Img src={g.capa} alt="" />
+
+                {/* quantos stories a pessoa tem, quando é mais de um */}
+                {g.stories.length > 1 && (
+                  <span className="absolute right-1.5 top-1.5 flex gap-0.5 rounded-full bg-canvas/70 px-1.5 py-1 backdrop-blur">
+                    {g.stories.slice(0, 5).map((st, i) => (
+                      <span
+                        key={st.id}
+                        className="block h-0.5 w-2 rounded-full"
+                        style={{
+                          background: st.visto
+                            ? 'rgba(255,255,255,.35)'
+                            : i < 5
+                              ? '#fff'
+                              : '#fff',
+                        }}
+                      />
+                    ))}
+                  </span>
+                )}
+
                 <span className="absolute bottom-2 left-1/2 -translate-x-1/2">
                   <Avatar
-                    src={st.autor.avatar}
-                    nome={st.autor.nome}
+                    src={g.autor.avatar}
+                    nome={g.autor.nome}
                     size={40}
-                    ring={st.visto ? '#4A494E' : 'var(--accent)'}
+                    ring={g.todosVistos ? '#4A494E' : 'var(--accent)'}
                   />
                 </span>
               </span>
               <span className="one-line block text-center text-xs text-t3">
-                {st.autor.handle.replace('@', '')}
+                {g.autor.handle.replace('@', '')}
               </span>
             </button>
           ))}

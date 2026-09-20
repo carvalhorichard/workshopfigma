@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp, useAcao } from '../app/store';
-import { api } from '../lib/api';
+import { api, enviarArquivo } from '../lib/api';
 import { Shell, TopBar } from '../components/layout/Shell';
 import { BotaoGrupo, PostCard } from '../components/domain';
 import {
@@ -14,6 +14,7 @@ import {
   Chip,
   Icon,
   Img,
+  SeletorImagem,
   Sheet,
   Skeleton,
   Tabs,
@@ -28,6 +29,7 @@ function NovoGrupo({ onFechar, onCriado }: { onFechar: () => void; onCriado: () 
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
   const [privado, setPrivado] = useState(false);
+  const [cover, setCover] = useState<string | null>(null);
   const [erro, setErro] = useState('');
   const [ocupado, setOcupado] = useState(false);
 
@@ -38,7 +40,7 @@ function NovoGrupo({ onFechar, onCriado }: { onFechar: () => void; onCriado: () 
     }
     setOcupado(true);
     try {
-      await api.criarGrupo(nome.trim(), descricao.trim(), privado);
+      await api.criarGrupo(nome.trim(), descricao.trim(), privado, cover);
       onCriado();
       onFechar();
     } catch (err) {
@@ -60,6 +62,16 @@ function NovoGrupo({ onFechar, onCriado }: { onFechar: () => void; onCriado: () 
       }
     >
       <div className="flex flex-col gap-3 p-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-t3">Capa do grupo</span>
+          <SeletorImagem
+            url={cover}
+            onUrl={setCover}
+            aspecto="16 / 9"
+            rotulo="Adicionar capa"
+          />
+        </div>
+
         <Campo label="Nome" erro={erro}>
           <input
             value={nome}
@@ -233,13 +245,19 @@ export function Grupos() {
 
 /* ── grupo aberto ────────────────────────────────────────────────────── */
 
-type GrupoDetalhado = Grupo & { membrosLista: User[]; posts: Post[] };
+type GrupoDetalhado = Grupo & {
+  membrosLista: User[];
+  posts: Post[];
+  papel: 'OWNER' | 'ADMIN' | 'MEMBER' | null;
+};
 
 export function GrupoDetalhe() {
-  const { s, set, rota, go, recarregar } = useApp();
+  const { s, set, rota, go, abrir, recarregar } = useApp();
   const acao = useAcao();
   const [g, setG] = useState<GrupoDetalhado | null>(null);
   const [erro, setErro] = useState('');
+  const [trocandoCapa, setTrocandoCapa] = useState(false);
+  const inputCapa = useRef<HTMLInputElement>(null);
 
   const id = rota.params?.grupoId;
 
@@ -279,6 +297,7 @@ export function GrupoDetalhe() {
     );
 
   const membro = g.status === 'ACTIVE';
+  const admin = g.papel === 'OWNER' || g.papel === 'ADMIN';
 
   return (
     <Shell>
@@ -297,8 +316,63 @@ export function GrupoDetalhe() {
 
       <div className="flex flex-col gap-4 pb-6">
         <div className="relative h-44 w-full overflow-hidden bg-elevated dk:h-60 dk:rounded-b-3xl">
-          <Img src={g.cover} alt="" loading="eager" />
-          <div className="absolute inset-0 bg-gradient-to-t from-canvas/90 to-transparent" />
+          {g.cover ? (
+            <button
+              onClick={() =>
+                abrir('imagem', {
+                  url: g.cover!,
+                  alt: `Capa de ${g.nome}`,
+                  titulo: `Capa de ${g.nome}`,
+                })
+              }
+              aria-label="Ver capa em tela cheia"
+              className="block h-full w-full cursor-zoom-in border-0 p-0"
+            >
+              <Img src={g.cover} alt="" loading="eager" />
+            </button>
+          ) : (
+            <div
+              className="h-full w-full"
+              style={{
+                background:
+                  'radial-gradient(120% 100% at 30% 0%, var(--accent-soft) 0%, transparent 60%), #242326',
+              }}
+            />
+          )}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-canvas/90 to-transparent" />
+
+          {/* só quem administra troca a capa */}
+          {admin && (
+            <>
+              <input
+                ref={inputCapa}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!f) return;
+                  setTrocandoCapa(true);
+                  await acao(async () => {
+                    const url = await enviarArquivo(f);
+                    await api.editarGrupo(g.id, { cover: url });
+                    carregar();
+                    void recarregar({ grupos: true });
+                  }, 'Capa atualizada');
+                  setTrocandoCapa(false);
+                }}
+              />
+              <button
+                onClick={() => inputCapa.current?.click()}
+                disabled={trocandoCapa}
+                className="absolute right-3 top-3 flex h-10 cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-canvas/75 px-3 text-xs font-medium text-t1 backdrop-blur disabled:opacity-60"
+              >
+                <Icon name="camera" size={16} />
+                {trocandoCapa ? 'Enviando…' : g.cover ? 'Trocar capa' : 'Adicionar capa'}
+              </button>
+            </>
+          )}
         </div>
 
         {/* mesmo motivo do perfil: fica acima da capa `relative` */}

@@ -82,6 +82,18 @@ export type Story = {
   visto: boolean;
 };
 
+/** Stories de uma pessoa, agrupados — um card só no trilho, como nas outras redes. */
+export type GrupoStories = {
+  autor: User;
+  stories: Story[];
+  /** true quando todos já foram vistos: o anel fica cinza */
+  todosVistos: boolean;
+  /** capa do card: o primeiro ainda não visto, ou o primeiro de todos */
+  capa: string | null;
+  /** índice por onde o visualizador começa */
+  inicio: number;
+};
+
 export type Mensagem = {
   id: string;
   minha: boolean;

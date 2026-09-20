@@ -11,6 +11,8 @@ import {
   type User,
 } from '../data/types';
 
+const REACOES_STORY = ['❤️', '👏', '🔥', '😍'];
+
 /** Busca o post do cache do feed ou do banco. */
 function usePost(id?: string) {
   const { s } = useApp();
@@ -392,37 +394,73 @@ function Sair() {
 /* ── visualizador de story ───────────────────────────────────────────── */
 
 function StoryViewer() {
-  const { s, fechar, toast } = useApp();
-  const inicial = Math.max(0, s.stories.findIndex((x) => x.id === s.sheet?.params?.storyId));
-  const [i, setI] = useState(inicial);
+  const { s, fechar, go, toast } = useApp();
+
+  // posicao: qual pessoa e qual story dentro dela
+  const grupoInicial = Math.max(
+    0,
+    s.stories.findIndex((g) => g.autor.id === s.sheet?.params?.autorId),
+  );
+  const [gi, setGi] = useState(grupoInicial);
+  const [si, setSi] = useState(s.stories[grupoInicial]?.inicio ?? 0);
   const [pausado, setPausado] = useState(false);
   const [progresso, setProgresso] = useState(0);
-  const story = s.stories[i];
 
-  useEffect(() => setProgresso(0), [i]);
+  const grupo = s.stories[gi];
+  const story = grupo?.stories[si];
+
+  // avanca dentro da pessoa; no fim dela, passa para a proxima
+  const proximo = useCallback(() => {
+    if (!grupo) return fechar();
+    if (si < grupo.stories.length - 1) setSi(si + 1);
+    else if (gi < s.stories.length - 1) {
+      setGi(gi + 1);
+      setSi(0);
+    } else fechar();
+  }, [grupo, si, gi, s.stories.length, fechar]);
+
+  const anterior = useCallback(() => {
+    if (si > 0) setSi(si - 1);
+    else if (gi > 0) {
+      const ant = s.stories[gi - 1];
+      setGi(gi - 1);
+      setSi(Math.max(0, ant.stories.length - 1));
+    } else fechar();
+  }, [si, gi, s.stories, fechar]);
+
+  useEffect(() => setProgresso(0), [gi, si]);
 
   useEffect(() => {
-    if (pausado) return;
+    if (pausado || !story) return;
     const t = setInterval(() => {
       setProgresso((p) => {
         if (p >= 100) {
-          if (i < s.stories.length - 1) setI((x) => x + 1);
-          else fechar();
+          proximo();
           return 0;
         }
         return p + 2;
       });
     }, 90);
     return () => clearInterval(t);
-  }, [pausado, i, s.stories.length, fechar]);
+  }, [pausado, story, proximo]);
 
+  // marca como visto uma vez por story
   const idAtual = story?.id;
   const naoVisto = story && !story.visto;
   useEffect(() => {
     if (idAtual && naoVisto) void api.marcarStoryVisto(idAtual).catch(() => {});
   }, [idAtual, naoVisto]);
 
-  if (!story) return null;
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') proximo();
+      if (e.key === 'ArrowLeft') anterior();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [proximo, anterior]);
+
+  if (!grupo || !story) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
@@ -430,41 +468,53 @@ function StoryViewer() {
         <Img src={story.img} alt={story.legenda} loading="eager" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
 
+        {/* uma barra por story DESTA pessoa */}
         <div className="safe-t absolute inset-x-0 top-0 flex gap-1 p-3">
-          {s.stories.map((_, k) => (
-            <span key={k} className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/30">
+          {grupo.stories.map((st, k) => (
+            <span key={st.id} className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/30">
               <span
                 className="block h-full bg-white transition-[width] duration-100"
-                style={{ width: k < i ? '100%' : k === i ? `${progresso}%` : '0%' }}
+                style={{ width: k < si ? '100%' : k === si ? `${progresso}%` : '0%' }}
               />
             </span>
           ))}
         </div>
 
         <div className="absolute inset-x-0 top-8 flex items-center gap-3 px-4">
-          <Avatar
-            src={story.autor.avatar}
-            nome={story.autor.nome}
-            size={36}
-            ring="rgba(255,255,255,.5)"
-          />
-          <span className="min-w-0 flex-1">
-            <span className="one-line block text-sm font-semibold text-white">
-              {story.autor.handle}
+          <button
+            onClick={() => {
+              fechar();
+              go('perfil', { handle: grupo.autor.handle });
+            }}
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 border-0 bg-transparent p-0 text-left"
+          >
+            <Avatar
+              src={grupo.autor.avatar}
+              nome={grupo.autor.nome}
+              size={36}
+              ring="rgba(255,255,255,.5)"
+            />
+            <span className="min-w-0">
+              <span className="one-line block text-sm font-semibold text-white">
+                {grupo.autor.handle}
+              </span>
+              <span className="block text-xs text-white/70">
+                {story.tempo}
+                {grupo.stories.length > 1 && ` · ${si + 1}/${grupo.stories.length}`}
+              </span>
             </span>
-            <span className="block text-xs text-white/70">{story.tempo}</span>
-          </span>
+          </button>
           <button
             onClick={() => setPausado((p) => !p)}
             aria-label={pausado ? 'Continuar' : 'Pausar'}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-black/40 text-white"
+            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-black/40 text-white"
           >
             <Icon name={pausado ? 'next' : 'eyeoff'} size={18} />
           </button>
           <button
             onClick={fechar}
             aria-label="Fechar story"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-black/40 text-white"
+            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-black/40 text-white"
           >
             <Icon name="close" size={20} />
           </button>
@@ -472,12 +522,12 @@ function StoryViewer() {
 
         <button
           aria-label="Story anterior"
-          onClick={() => (i > 0 ? setI(i - 1) : fechar())}
+          onClick={anterior}
           className="absolute bottom-28 left-0 top-20 w-1/3 cursor-pointer border-0 bg-transparent"
         />
         <button
           aria-label="Próximo story"
-          onClick={() => (i < s.stories.length - 1 ? setI(i + 1) : fechar())}
+          onClick={proximo}
           className="absolute bottom-28 right-0 top-20 w-1/3 cursor-pointer border-0 bg-transparent"
         />
 
@@ -486,7 +536,7 @@ function StoryViewer() {
             <p className="m-0 text-sm leading-relaxed text-white">{story.legenda}</p>
           )}
           <div className="flex gap-2">
-            {['❤️', '👏', '🔥', '😍'].map((e) => (
+            {REACOES_STORY.map((e) => (
               <button
                 key={e}
                 aria-label={`Reagir ${e}`}
@@ -503,7 +553,58 @@ function StoryViewer() {
   );
 }
 
-/* ── seguidores / seguindo ───────────────────────────────────────────── */
+/* ── imagem em tela cheia ──────────────────────────────────── */
+
+/** Lightbox: capa e avatar do perfil, capa do grupo. */
+function VerImagem() {
+  const { s, fechar } = useApp();
+  const url = s.sheet?.params?.url;
+  const alt = s.sheet?.params?.alt ?? '';
+  const titulo = s.sheet?.params?.titulo ?? 'Imagem';
+  if (!url) return null;
+
+  const fecharNoFundo = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) fechar();
+  };
+
+  return (
+    <div
+      className="anim-fade fixed inset-0 z-50 flex flex-col bg-black/92"
+      onMouseDown={fecharNoFundo}
+    >
+      <div className="safe-t flex items-center gap-3 px-4 pb-3">
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-white/90">
+          {titulo}
+        </span>
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer noopener"
+          aria-label="Abrir em tamanho original"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur"
+        >
+          <Icon name="link" size={18} />
+        </a>
+        <button
+          onClick={fechar}
+          aria-label="Fechar"
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur"
+        >
+          <Icon name="close" size={20} />
+        </button>
+      </div>
+
+      <div
+        className="flex min-h-0 flex-1 items-center justify-center p-4"
+        onMouseDown={fecharNoFundo}
+      >
+        <img src={url} alt={alt} className="max-h-full max-w-full rounded-xl object-contain" />
+      </div>
+    </div>
+  );
+}
+
+/* ── seguidores / seguindo ───────────────────────────────── */
 
 function Seguidores() {
   const { s, fechar, go, toast, recarregar } = useApp();
@@ -516,10 +617,7 @@ function Seguidores() {
 
   const carregar = useCallback(() => {
     if (!handle) return;
-    api
-      .listaSeguidores(handle, tipo)
-      .then(setLista)
-      .catch(() => setLista([]));
+    api.listaSeguidores(handle, tipo).then(setLista).catch(() => setLista([]));
   }, [handle, tipo]);
 
   useEffect(carregar, [carregar]);
@@ -558,10 +656,7 @@ function Seguidores() {
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-4">
           {lista.map((u) => (
-            <li
-              key={u.id}
-              className="flex items-center gap-3 rounded-2xl bg-surface p-2 pr-3"
-            >
+            <li key={u.id} className="flex items-center gap-3 rounded-2xl bg-surface p-2 pr-3">
               <button
                 onClick={() => {
                   fechar();
@@ -595,9 +690,7 @@ function Seguidores() {
                     executar(async () => {
                       const r = await api.seguir(u.id);
                       toast(
-                        r.following
-                          ? `Seguindo ${u.nome}`
-                          : `Deixou de seguir ${u.nome}`,
+                        r.following ? `Seguindo ${u.nome}` : `Deixou de seguir ${u.nome}`,
                       );
                       carregar();
                       void recarregar({ feed: true, perfil: true });
@@ -634,6 +727,8 @@ export function Sheets() {
       return <Seguidores />;
     case 'story':
       return <StoryViewer />;
+    case 'imagem':
+      return <VerImagem />;
     default:
       return null;
   }

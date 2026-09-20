@@ -73,7 +73,19 @@ export function Perfil() {
       <div className="flex flex-col gap-4 pb-6">
         <div className="relative h-36 w-full overflow-hidden bg-elevated dk:h-52 dk:rounded-b-3xl">
           {p.capa ? (
-            <Img src={p.capa} alt="" loading="eager" />
+            <button
+              onClick={() =>
+                abrir('imagem', {
+                  url: p.capa!,
+                  alt: `Capa de ${p.nome}`,
+                  titulo: `Capa de ${p.nome}`,
+                })
+              }
+              aria-label="Ver capa em tela cheia"
+              className="block h-full w-full cursor-zoom-in border-0 p-0"
+            >
+              <Img src={p.capa} alt="" loading="eager" />
+            </button>
           ) : (
             <div
               className="h-full w-full"
@@ -105,13 +117,28 @@ export function Perfil() {
         {/* relative + z-10: sem isso a capa, que é `relative`, pinta por cima
             do avatar e corta a foto pela metade */}
         <div className="relative z-10 -mt-14 flex flex-col gap-3 px-4">
-          <Avatar
-            src={p.avatar}
-            nome={p.nome}
-            size={88}
-            className="border-4 border-canvas"
-            alt={p.nome}
-          />
+          <button
+            onClick={() =>
+              p.avatar &&
+              abrir('imagem', {
+                url: p.avatar,
+                alt: `Foto de ${p.nome}`,
+                titulo: p.nome,
+              })
+            }
+            aria-label="Ver foto de perfil em tela cheia"
+            className={`w-fit rounded-full border-0 bg-transparent p-0 ${
+              p.avatar ? 'cursor-zoom-in' : 'cursor-default'
+            }`}
+          >
+            <Avatar
+              src={p.avatar}
+              nome={p.nome}
+              size={88}
+              className="border-4 border-canvas"
+              alt={p.nome}
+            />
+          </button>
           <div className="flex flex-col gap-1">
             <h1 className="m-0 flex items-center gap-2 text-2xl font-bold tracking-tight text-t1">
               {p.nome}
