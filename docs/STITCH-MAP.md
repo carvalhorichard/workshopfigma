@@ -4,11 +4,13 @@
 Nome extraído dos próprios exports (`<h1>Musique</h1>` em `Main.dc.html`, rodapé
 "Musique 1.0.0 · feito para ouvir junto" em `Configuracoes-Mobile.dc.html`).
 
-**Árvore de telas:** não foi anexado arquivo de árvore, TELAS.md, COMPORTAMENTO.md
-nem BRIEFING.md. O inventário usado é a própria pasta de exports
-(`C:\Users\ze\Desktop\export\*.dc.html` — 43 artboards) somada aos links `href`
-entre eles, que descrevem a navegação. Se a árvore oficial aparecer depois,
-compare com a tabela abaixo antes de mexer no escopo.
+**Árvore de telas:** este mapa foi levantado antes de existir um arquivo de
+árvore, a partir da própria pasta de exports (`design/screens/*.dc.html` —
+43 artboards) somada aos links `href` entre eles, que descrevem a navegação.
+
+Uma árvore chegou depois, mas descrevendo o **Gooday** (domínio fitness, 37
+superfícies). A estrutura foi aproveitada; o conteúdo continua sendo o do
+Musique, que é o produto dos exports e o que está implementado.
 
 **App:** `musique-app/` — React 19 + TypeScript + Vite 7 + Tailwind CSS v4.
 
