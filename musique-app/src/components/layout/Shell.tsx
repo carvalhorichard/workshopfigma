@@ -95,12 +95,12 @@ function RailDesktop() {
         onClick={() => abrir('sair')}
         className="mt-1 flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-surface p-2.5 text-left transition-colors hover:bg-elevated"
       >
-        <Avatar src={s.perfil.avatar} size={36} />
+        <Avatar src={s.perfil?.avatar} nome={s.perfil?.nome ?? '?'} size={36} />
         <span className="min-w-0 flex-1">
           <span className="one-line block text-sm font-semibold text-t1">
-            {s.perfil.nome}
+            {s.perfil?.nome ?? 'Carregando…'}
           </span>
-          <span className="one-line block text-xs text-t4">{s.perfil.handle}</span>
+          <span className="one-line block text-xs text-t4">{s.perfil?.handle}</span>
         </span>
         <Icon name="logout" size={18} />
       </button>

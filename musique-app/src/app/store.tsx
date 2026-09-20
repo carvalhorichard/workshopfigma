@@ -1,6 +1,9 @@
 /**
- * Estado único do app: navegação (pilha de views + sheets), dados mock e todas
- * as ações que as telas disparam. Nenhum botão da árvore fica sem handler.
+ * Estado do app.
+ *
+ * A sessão vem do Supabase Auth e os dados das RPCs (src/lib/api.ts).
+ * Não existe mais dado em memória: recarregar a página mantém o login e
+ * relê tudo do banco.
  */
 import {
   createContext,
@@ -8,430 +11,250 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useReducer,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
-import {
-  CONVERSAS,
-  EU,
-  GRUPOS,
-  NOTIFICACOES,
-  POSTS,
-  STORIES,
-  INTERESSES,
-  type Conversa,
-  type Grupo,
-  type Notificacao,
-  type Post,
-  type Story,
-  type User,
-} from '../data/db';
-import { EXTRA_PHOTOS } from '../data/images';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
+import type {
+  Conversa,
+  Grupo,
+  Notificacao,
+  Perfil,
+  Post,
+  Story,
+  User,
+} from '../data/types';
 
 export type ViewName =
-  | 'login'
-  | 'cadastro'
-  | 'home'
-  | 'buscar'
-  | 'criar'
-  | 'criar-story'
-  | 'grupos'
-  | 'grupo'
-  | 'mensagens'
-  | 'chat'
-  | 'notificacoes'
-  | 'perfil'
-  | 'editar-perfil'
-  | 'config'
-  | 'post';
+  | 'login' | 'cadastro' | 'home' | 'buscar' | 'criar' | 'criar-story'
+  | 'grupos' | 'grupo' | 'mensagens' | 'chat' | 'notificacoes' | 'perfil'
+  | 'editar-perfil' | 'config' | 'post';
 
 export type SheetName =
-  | 'comentarios'
-  | 'compartilhar'
-  | 'menu-post'
-  | 'reacoes'
-  | 'sair'
-  | 'story';
+  | 'comentarios' | 'compartilhar' | 'menu-post' | 'reacoes' | 'sair' | 'story';
 
 export type Route = { view: ViewName; params?: Record<string, string> };
 export type Sheet = { name: SheetName; params?: Record<string, string> };
 export type Toast = { id: number; texto: string };
-export type FeedEstado = 'ok' | 'loading' | 'vazio' | 'erro';
+export type EstadoFeed = 'carregando' | 'ok' | 'vazio' | 'erro';
 
-type State = {
-  autenticado: boolean;
+type Estado = {
+  sessao: Session | null;
+  iniciando: boolean;
+  perfil: Perfil | null;
+
   pilha: Route[];
   sheet: Sheet | null;
   toasts: Toast[];
-  feed: FeedEstado;
-  posts: Post[];
+
+  feed: Post[];
+  estadoFeed: EstadoFeed;
+  erroFeed: string;
   stories: Story[];
   grupos: Grupo[];
   conversas: Conversa[];
   notificacoes: Notificacao[];
-  seguindo: Record<string, boolean>;
-  perfil: User & { interesses: string[] };
+  sugestoes: User[];
+
   busca: string;
   filtroGrupos: string;
-  accent: string;
   abaPerfil: string;
   abaGrupo: string;
+  accent: string;
 };
 
 const ACCENT_PADRAO = '#6155F5';
 
-const inicial: State = {
-  autenticado: false,
-  pilha: [{ view: 'login' }],
-  sheet: null,
-  toasts: [],
-  feed: 'ok',
-  posts: POSTS,
-  stories: STORIES,
-  grupos: GRUPOS,
-  conversas: CONVERSAS,
-  notificacoes: NOTIFICACOES,
-  seguindo: { elina: true, estudio: true, joao: false, marina: false, rafa: false },
-  perfil: { ...EU, interesses: INTERESSES },
-  busca: '',
-  filtroGrupos: 'Todos',
-  accent: ACCENT_PADRAO,
-  abaPerfil: 'Publicações',
-  abaGrupo: 'Publicações',
-};
-
-type Action =
-  | { t: 'go'; route: Route }
-  | { t: 'back' }
-  | { t: 'reset'; route: Route }
-  | { t: 'sheet'; sheet: Sheet | null }
-  | { t: 'toast'; texto: string }
-  | { t: 'untoast'; id: number }
-  | { t: 'feed'; estado: FeedEstado }
-  | { t: 'curtir'; postId: string }
-  | { t: 'salvar'; postId: string }
-  | { t: 'reagir'; postId: string; emoji: string; label: string }
-  | { t: 'comentar'; postId: string; texto: string }
-  | { t: 'curtir-comentario'; postId: string; comentarioId: string }
-  | { t: 'publicar'; texto: string; tags: string[]; grupo?: string }
-  | { t: 'publicar-story'; legenda: string }
-  | { t: 'seguir'; userId: string }
-  | { t: 'grupo-status'; grupoId: string }
-  | { t: 'enviar'; conversaId: string; texto: string }
-  | { t: 'ler-conversa'; conversaId: string }
-  | { t: 'nova-conversa'; userId: string }
-  | { t: 'ler-notificacoes' }
-  | { t: 'ver-story'; storyId: string }
-  | { t: 'busca'; valor: string }
-  | { t: 'filtro-grupos'; valor: string }
-  | { t: 'accent'; valor: string }
-  | { t: 'aba-perfil'; valor: string }
-  | { t: 'aba-grupo'; valor: string }
-  | { t: 'salvar-perfil'; dados: Partial<State['perfil']> }
-  | { t: 'entrar' }
-  | { t: 'sair' };
-
-let seq = 1;
-const uid = (p: string) => `${p}${Date.now()}${seq++}`;
-
-const agora = () =>
-  new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-function reducer(s: State, a: Action): State {
-  switch (a.t) {
-    case 'go':
-      return { ...s, pilha: [...s.pilha, a.route], sheet: null };
-    case 'back':
-      return s.pilha.length > 1
-        ? { ...s, pilha: s.pilha.slice(0, -1), sheet: null }
-        : { ...s, sheet: null };
-    case 'reset':
-      return { ...s, pilha: [a.route], sheet: null };
-    case 'sheet':
-      return { ...s, sheet: a.sheet };
-    case 'toast':
-      return { ...s, toasts: [...s.toasts, { id: seq++, texto: a.texto }] };
-    case 'untoast':
-      return { ...s, toasts: s.toasts.filter((t) => t.id !== a.id) };
-    case 'feed':
-      return { ...s, feed: a.estado };
-
-    case 'curtir':
-      return {
-        ...s,
-        posts: s.posts.map((p) =>
-          p.id === a.postId
-            ? {
-                ...p,
-                curtido: !p.curtido,
-                curtidas: p.curtidas + (p.curtido ? -1 : 1),
-              }
-            : p,
-        ),
-      };
-
-    case 'salvar':
-      return {
-        ...s,
-        posts: s.posts.map((p) =>
-          p.id === a.postId ? { ...p, salvo: !p.salvo } : p,
-        ),
-      };
-
-    case 'reagir':
-      return {
-        ...s,
-        posts: s.posts.map((p) => {
-          if (p.id !== a.postId) return p;
-          const jaEra = p.minhaReacao === a.emoji;
-          let reacoes = p.reacoes.map((r) =>
-            r.emoji === p.minhaReacao ? { ...r, count: Math.max(0, r.count - 1) } : r,
-          );
-          if (!jaEra) {
-            const existe = reacoes.find((r) => r.emoji === a.emoji);
-            reacoes = existe
-              ? reacoes.map((r) =>
-                  r.emoji === a.emoji ? { ...r, count: r.count + 1 } : r,
-                )
-              : [...reacoes, { emoji: a.emoji, label: a.label, count: 1 }];
-          }
-          return {
-            ...p,
-            reacoes: reacoes.filter((r) => r.count > 0),
-            minhaReacao: jaEra ? undefined : a.emoji,
-          };
-        }),
-      };
-
-    case 'comentar':
-      return {
-        ...s,
-        posts: s.posts.map((p) =>
-          p.id === a.postId
-            ? {
-                ...p,
-                comentarios: [
-                  ...p.comentarios,
-                  {
-                    id: uid('c'),
-                    autorId: 'eu',
-                    tempo: 'agora',
-                    texto: a.texto,
-                    curtidas: 0,
-                    curtido: false,
-                  },
-                ],
-              }
-            : p,
-        ),
-      };
-
-    case 'curtir-comentario':
-      return {
-        ...s,
-        posts: s.posts.map((p) =>
-          p.id === a.postId
-            ? {
-                ...p,
-                comentarios: p.comentarios.map((c) =>
-                  c.id === a.comentarioId
-                    ? {
-                        ...c,
-                        curtido: !c.curtido,
-                        curtidas: c.curtidas + (c.curtido ? -1 : 1),
-                      }
-                    : c,
-                ),
-              }
-            : p,
-        ),
-      };
-
-    case 'publicar': {
-      const novo: Post = {
-        id: uid('p'),
-        autorId: 'eu',
-        meta: `agora${a.grupo ? ` · ${a.grupo}` : ''}`,
-        texto: a.texto,
-        tags: a.tags,
-        media: EXTRA_PHOTOS[Math.floor(Math.random() * EXTRA_PHOTOS.length)],
-        mediaAlt: 'Mídia da sua publicação',
-        local: 'São Paulo, SP',
-        quando: `Hoje, ${agora()}`,
-        curtidas: 0,
-        curtido: false,
-        salvo: false,
-        reacoes: [],
-        comentarios: [],
-      };
-      return { ...s, posts: [novo, ...s.posts], feed: 'ok' };
-    }
-
-    case 'publicar-story': {
-      const novo: Story = {
-        id: uid('st'),
-        autorId: 'eu',
-        img: EXTRA_PHOTOS[Math.floor(Math.random() * EXTRA_PHOTOS.length)],
-        label: 'você',
-        novo: true,
-        legenda: a.legenda || 'Seu story',
-        tempo: 'agora',
-        visto: false,
-      };
-      return { ...s, stories: [novo, ...s.stories] };
-    }
-
-    case 'seguir':
-      return { ...s, seguindo: { ...s.seguindo, [a.userId]: !s.seguindo[a.userId] } };
-
-    case 'grupo-status':
-      return {
-        ...s,
-        grupos: s.grupos.map((g) => {
-          if (g.id !== a.grupoId) return g;
-          if (g.privacidade === 'Privado')
-            return { ...g, status: g.status === 'fora' ? 'solicitado' : 'fora' };
-          return {
-            ...g,
-            status: g.status === 'participando' ? 'fora' : 'participando',
-          };
-        }),
-      };
-
-    case 'enviar':
-      return {
-        ...s,
-        conversas: s.conversas.map((c) =>
-          c.id === a.conversaId
-            ? {
-                ...c,
-                preview: `Você: ${a.texto}`,
-                hora: 'agora',
-                naoLidas: 0,
-                mensagens: [
-                  ...c.mensagens,
-                  { id: uid('m'), minha: true, texto: a.texto, hora: agora() },
-                ],
-              }
-            : c,
-        ),
-      };
-
-    case 'ler-conversa':
-      return {
-        ...s,
-        conversas: s.conversas.map((c) =>
-          c.id === a.conversaId ? { ...c, naoLidas: 0 } : c,
-        ),
-      };
-
-    case 'nova-conversa': {
-      const existente = s.conversas.find((c) => c.comId === a.userId);
-      if (existente) return s;
-      const nova: Conversa = {
-        id: uid('cv'),
-        comId: a.userId,
-        preview: 'Conversa nova',
-        hora: 'agora',
-        naoLidas: 0,
-        mensagens: [],
-      };
-      return { ...s, conversas: [nova, ...s.conversas] };
-    }
-
-    case 'ler-notificacoes':
-      return { ...s, notificacoes: s.notificacoes.map((n) => ({ ...n, lida: true })) };
-
-    case 'ver-story':
-      return {
-        ...s,
-        stories: s.stories.map((st) =>
-          st.id === a.storyId ? { ...st, visto: true, novo: false } : st,
-        ),
-      };
-
-    case 'busca':
-      return { ...s, busca: a.valor };
-    case 'filtro-grupos':
-      return { ...s, filtroGrupos: a.valor };
-    case 'accent':
-      return { ...s, accent: a.valor };
-    case 'aba-perfil':
-      return { ...s, abaPerfil: a.valor };
-    case 'aba-grupo':
-      return { ...s, abaGrupo: a.valor };
-
-    case 'salvar-perfil':
-      return { ...s, perfil: { ...s.perfil, ...a.dados } };
-
-    case 'entrar':
-      return { ...s, autenticado: true, pilha: [{ view: 'home' }], sheet: null };
-
-    case 'sair':
-      return { ...inicial, accent: s.accent };
-  }
-}
-
-/* ── contexto ────────────────────────────────────────────────────────── */
-
 type Ctx = {
-  s: State;
+  s: Estado;
   rota: Route;
   go: (view: ViewName, params?: Record<string, string>) => void;
   back: () => void;
-  reset: (view: ViewName) => void;
   abrir: (name: SheetName, params?: Record<string, string>) => void;
   fechar: () => void;
   toast: (texto: string) => void;
-  d: React.Dispatch<Action>;
-  postAtual: (id?: string) => Post | undefined;
+  set: <K extends keyof Estado>(k: K, v: Estado[K]) => void;
+  /** substitui um post na lista após uma ação (curtir, salvar, reagir) */
+  aplicarPost: (id: string, patch: Partial<Post>) => void;
+  recarregar: (o?: { feed?: boolean; stories?: boolean; grupos?: boolean;
+                     conversas?: boolean; notificacoes?: boolean; perfil?: boolean }) => Promise<void>;
+  sair: () => Promise<void>;
 };
 
 const AppCtx = createContext<Ctx | null>(null);
 
+let seq = 1;
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [s, d] = useReducer(reducer, inicial);
-  const rota = s.pilha[s.pilha.length - 1];
+  const [s, setS] = useState<Estado>({
+    sessao: null,
+    iniciando: true,
+    perfil: null,
+    pilha: [{ view: 'login' }],
+    sheet: null,
+    toasts: [],
+    feed: [],
+    estadoFeed: 'carregando',
+    erroFeed: '',
+    stories: [],
+    grupos: [],
+    conversas: [],
+    notificacoes: [],
+    sugestoes: [],
+    busca: '',
+    filtroGrupos: 'Todos',
+    abaPerfil: 'Publicações',
+    abaGrupo: 'Publicações',
+    accent: ACCENT_PADRAO,
+  });
+
+  const patch = useCallback(
+    (p: Partial<Estado> | ((e: Estado) => Partial<Estado>)) =>
+      setS((e) => ({ ...e, ...(typeof p === 'function' ? p(e) : p) })),
+    [],
+  );
+
+  const set = useCallback(
+    <K extends keyof Estado>(k: K, v: Estado[K]) => patch({ [k]: v } as Partial<Estado>),
+    [patch],
+  );
+
+  const toast = useCallback(
+    (texto: string) =>
+      patch((e) => ({ toasts: [...e.toasts, { id: seq++, texto }] })),
+    [patch],
+  );
 
   const go = useCallback(
     (view: ViewName, params?: Record<string, string>) =>
-      d({ t: 'go', route: { view, params } }),
-    [],
+      patch((e) => ({ pilha: [...e.pilha, { view, params }], sheet: null })),
+    [patch],
   );
-  const back = useCallback(() => d({ t: 'back' }), []);
-  const reset = useCallback((view: ViewName) => d({ t: 'reset', route: { view } }), []);
+
+  const back = useCallback(
+    () =>
+      patch((e) => ({
+        pilha: e.pilha.length > 1 ? e.pilha.slice(0, -1) : e.pilha,
+        sheet: null,
+      })),
+    [patch],
+  );
+
   const abrir = useCallback(
-    (name: SheetName, params?: Record<string, string>) =>
-      d({ t: 'sheet', sheet: { name, params } }),
-    [],
+    (name: SheetName, params?: Record<string, string>) => patch({ sheet: { name, params } }),
+    [patch],
   );
-  const fechar = useCallback(() => d({ t: 'sheet', sheet: null }), []);
-  const toast = useCallback((texto: string) => d({ t: 'toast', texto }), []);
+  const fechar = useCallback(() => patch({ sheet: null }), [patch]);
 
-  const postAtual = useCallback(
-    (id?: string) => s.posts.find((p) => p.id === (id ?? rota.params?.postId)),
-    [s.posts, rota],
+  const aplicarPost = useCallback(
+    (id: string, p: Partial<Post>) =>
+      patch((e) => ({ feed: e.feed.map((x) => (x.id === id ? { ...x, ...p } : x)) })),
+    [patch],
   );
 
-  /* accent aplicado como variável CSS, como no editor do design */
+  /* ── carregamento ──────────────────────────────────────────── */
+
+  const recarregar = useCallback(
+    async (o?: { feed?: boolean; stories?: boolean; grupos?: boolean;
+                  conversas?: boolean; notificacoes?: boolean; perfil?: boolean }) => {
+      const tudo = !o;
+      const tarefas: Promise<void>[] = [];
+
+      if (tudo || o?.perfil)
+        tarefas.push(api.eu().then((p) => patch({ perfil: p })).catch(() => {}));
+
+      if (tudo || o?.feed)
+        tarefas.push(
+          (async () => {
+            patch({ estadoFeed: 'carregando', erroFeed: '' });
+            try {
+              let posts = await api.feed();
+              // feed vazio (conta nova, ninguém seguido): mostra o que é público
+              if (posts.length === 0) posts = await api.explorar();
+              patch({ feed: posts, estadoFeed: posts.length ? 'ok' : 'vazio' });
+            } catch (err) {
+              patch({
+                estadoFeed: 'erro',
+                erroFeed: err instanceof Error ? err.message : 'Erro desconhecido',
+              });
+            }
+          })(),
+        );
+
+      if (tudo || o?.stories)
+        tarefas.push(api.stories().then((v) => patch({ stories: v })).catch(() => {}));
+      if (tudo || o?.grupos)
+        tarefas.push(api.grupos('Todos').then((v) => patch({ grupos: v })).catch(() => {}));
+      if (tudo || o?.conversas)
+        tarefas.push(api.conversas().then((v) => patch({ conversas: v })).catch(() => {}));
+      if (tudo || o?.notificacoes)
+        tarefas.push(api.notificacoes().then((v) => patch({ notificacoes: v })).catch(() => {}));
+      if (tudo)
+        tarefas.push(api.sugestoes().then((v) => patch({ sugestoes: v })).catch(() => {}));
+
+      await Promise.all(tarefas);
+    },
+    [patch],
+  );
+
+  const sair = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, []);
+
+  /* ── sessão ────────────────────────────────────────────────── */
+
+  const carregou = useRef<string | null>(null);
+
   useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      patch({ sessao: data.session, iniciando: false });
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((evento, sessao) => {
+      patch({ sessao, iniciando: false });
+      if (evento === 'SIGNED_OUT') {
+        carregou.current = null;
+        patch({
+          perfil: null, feed: [], stories: [], grupos: [], conversas: [],
+          notificacoes: [], sugestoes: [], pilha: [{ view: 'login' }], sheet: null,
+        });
+      }
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, [patch]);
+
+  // Ao autenticar, carrega tudo uma vez e leva para a Home.
+  useEffect(() => {
+    const uid = s.sessao?.user.id;
+    if (!uid || carregou.current === uid) return;
+    carregou.current = uid;
+    patch({ pilha: [{ view: 'home' }] });
+    void recarregar();
+  }, [s.sessao, patch, recarregar]);
+
+  /* ── efeitos de interface ──────────────────────────────────── */
+
+  // cor de destaque escolhida em Configurações
+  useEffect(() => {
+    const cor = s.perfil ? s.accent : ACCENT_PADRAO;
     const r = document.documentElement;
-    r.style.setProperty('--accent', s.accent);
-    const [, rr, gg, bb] = /^#(\w{2})(\w{2})(\w{2})$/.exec(s.accent) ?? [];
-    if (rr)
+    r.style.setProperty('--accent', cor);
+    const m = /^#(\w{2})(\w{2})(\w{2})$/.exec(cor);
+    if (m)
       r.style.setProperty(
         '--accent-soft',
-        `rgba(${parseInt(rr, 16)}, ${parseInt(gg, 16)}, ${parseInt(bb, 16)}, 0.16)`,
+        `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, 0.16)`,
       );
-  }, [s.accent]);
+  }, [s.accent, s.perfil]);
 
-  /* trava o scroll do body enquanto um sheet está aberto */
   useEffect(() => {
     document.body.dataset.locked = s.sheet ? 'true' : 'false';
   }, [s.sheet]);
 
-  /* Escape fecha o sheet do topo */
   useEffect(() => {
     if (!s.sheet) return;
     const h = (e: KeyboardEvent) => {
@@ -441,19 +264,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', h);
   }, [s.sheet, fechar]);
 
-  /* toasts somem sozinhos */
   const vistos = useRef(new Set<number>());
   useEffect(() => {
     s.toasts.forEach((t) => {
       if (vistos.current.has(t.id)) return;
       vistos.current.add(t.id);
-      setTimeout(() => d({ t: 'untoast', id: t.id }), 2600);
+      setTimeout(
+        () => patch((e) => ({ toasts: e.toasts.filter((x) => x.id !== t.id) })),
+        2600,
+      );
     });
-  }, [s.toasts]);
+  }, [s.toasts, patch]);
+
+  const rota = s.pilha[s.pilha.length - 1];
 
   const valor = useMemo(
-    () => ({ s, rota, go, back, reset, abrir, fechar, toast, d, postAtual }),
-    [s, rota, go, back, reset, abrir, fechar, toast, postAtual],
+    () => ({ s, rota, go, back, abrir, fechar, toast, set, aplicarPost, recarregar, sair }),
+    [s, rota, go, back, abrir, fechar, toast, set, aplicarPost, recarregar, sair],
   );
 
   return <AppCtx.Provider value={valor}>{children}</AppCtx.Provider>;
@@ -463,4 +290,20 @@ export function useApp() {
   const c = useContext(AppCtx);
   if (!c) throw new Error('useApp fora do AppProvider');
   return c;
+}
+
+/** Envolve uma ação async mostrando o erro como toast em vez de quebrar a tela. */
+export function useAcao() {
+  const { toast } = useApp();
+  return useCallback(
+    async (fn: () => Promise<unknown>, msgOk?: string) => {
+      try {
+        await fn();
+        if (msgOk) toast(msgOk);
+      } catch (err) {
+        toast(err instanceof Error ? err.message : 'Algo deu errado');
+      }
+    },
+    [toast],
+  );
 }

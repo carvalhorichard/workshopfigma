@@ -1,39 +1,120 @@
-import { useMemo, useState } from 'react';
-import { useApp } from '../app/store';
+import { useCallback, useEffect, useState } from 'react';
+import { useApp, useAcao } from '../app/store';
+import { api } from '../lib/api';
 import { Shell, TopBar } from '../components/layout/Shell';
-import { PostCard } from '../components/domain';
+import { BotaoGrupo, PostCard } from '../components/domain';
 import {
   Avatar,
   AvatarStack,
   Button,
+  Campo,
   Chip,
   Icon,
   Img,
+  Sheet,
+  Skeleton,
   Tabs,
   Vazio,
+  entradaCls,
 } from '../components/ui';
-import { FILTROS_GRUPOS, userById } from '../data/db';
+import { FILTROS_GRUPOS, type Grupo, type Post, type User } from '../data/types';
+
+/* ── criar grupo ─────────────────────────────────────────────────────── */
+
+function NovoGrupo({ onFechar, onCriado }: { onFechar: () => void; onCriado: () => void }) {
+  const [nome, setNome] = useState('');
+  const [descricao, setDescricao] = useState('');
+  const [privado, setPrivado] = useState(false);
+  const [erro, setErro] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+
+  async function criar() {
+    if (nome.trim().length < 2) {
+      setErro('Dê um nome ao grupo.');
+      return;
+    }
+    setOcupado(true);
+    try {
+      await api.criarGrupo(nome.trim(), descricao.trim(), privado);
+      onCriado();
+      onFechar();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Não deu para criar.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  return (
+    <Sheet
+      titulo="Novo grupo"
+      onClose={onFechar}
+      alturaMax="auto"
+      rodape={
+        <Button bloco tamanho="lg" onClick={criar} disabled={ocupado}>
+          {ocupado ? 'Criando…' : 'Criar grupo'}
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-3 p-4">
+        <Campo label="Nome" erro={erro}>
+          <input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Violão e Voz"
+            className={entradaCls}
+          />
+        </Campo>
+        <Campo label="Descrição" hint="Explique para quem é o grupo.">
+          <textarea
+            rows={3}
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+            placeholder="Gente que toca e canta junto…"
+            className="w-full resize-none rounded-xl border border-line bg-surface px-4 py-3.5 text-base leading-relaxed text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
+          />
+        </Campo>
+        <label className="flex items-start gap-3 rounded-xl bg-surface p-3 text-sm text-t2">
+          <input
+            type="checkbox"
+            checked={privado}
+            onChange={(e) => setPrivado(e.target.checked)}
+            className="mt-0.5 h-5 w-5 shrink-0"
+            style={{ accentColor: 'var(--accent)' }}
+          />
+          <span>
+            Grupo privado
+            <span className="block text-xs text-t4">
+              Só membros veem as publicações, e a entrada passa por aprovação.
+            </span>
+          </span>
+        </label>
+      </div>
+    </Sheet>
+  );
+}
 
 /* ── lista de grupos ─────────────────────────────────────────────────── */
 
 export function Grupos() {
-  const { s, d, go, toast } = useApp();
+  const { s, set, go, recarregar } = useApp();
   const [q, setQ] = useState('');
+  const [lista, setLista] = useState<Grupo[] | null>(null);
+  const [novo, setNovo] = useState(false);
 
-  const lista = useMemo(() => {
-    const f = s.filtroGrupos;
-    return s.grupos
-      .filter((g) =>
-        f === 'Todos'
-          ? true
-          : f === 'Participando'
-            ? g.status === 'participando'
-            : f === 'Sugeridos'
-              ? g.status === 'fora'
-              : g.categoria === f,
-      )
-      .filter((g) => !q || g.nome.toLowerCase().includes(q.toLowerCase()));
-  }, [s.grupos, s.filtroGrupos, q]);
+  const carregar = useCallback(() => {
+    setLista(null);
+    api
+      .grupos(s.filtroGrupos)
+      .then(setLista)
+      .catch(() => setLista([]));
+  }, [s.filtroGrupos]);
+
+  useEffect(carregar, [carregar]);
+
+  const filtrados = (lista ?? []).filter(
+    (g) => !q || g.nome.toLowerCase().includes(q.toLowerCase()),
+  );
 
   return (
     <Shell>
@@ -43,7 +124,7 @@ export function Grupos() {
             <h1 className="m-0 min-w-0 flex-1 text-2xl font-bold tracking-tight text-t1">
               Grupos
             </h1>
-            <Button tamanho="sm" onClick={() => toast('Criação de grupo entra na próxima etapa')}>
+            <Button tamanho="sm" onClick={() => setNovo(true)}>
               <Icon name="plus" size={16} /> Criar
             </Button>
           </div>
@@ -55,7 +136,7 @@ export function Grupos() {
               onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar grupos"
               aria-label="Buscar grupos"
-              className="h-13 w-full min-w-0 rounded-xl border border-line bg-surface pl-12 pr-4 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
+              className="h-13 w-full rounded-xl border border-line bg-surface pl-12 pr-4 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
             />
             <span className="pointer-events-none absolute left-0 top-0 flex h-13 w-12 items-center justify-center text-t3">
               <Icon name="search" size={20} />
@@ -68,7 +149,7 @@ export function Grupos() {
                 <Chip
                   key={f}
                   ativo={s.filtroGrupos === f}
-                  onClick={() => d({ t: 'filtro-grupos', valor: f })}
+                  onClick={() => set('filtroGrupos', f)}
                 >
                   {f}
                 </Chip>
@@ -77,23 +158,29 @@ export function Grupos() {
           </div>
         </div>
 
-        {lista.length === 0 ? (
+        {lista === null ? (
+          <div className="grid gap-3 px-4 dk:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-60 rounded-2xl" />
+            ))}
+          </div>
+        ) : filtrados.length === 0 ? (
           <Vazio
             icone="nodes"
             titulo="Nenhum grupo por aqui"
-            texto="Troque o filtro ou busque por instrumento, estilo ou cidade."
+            texto="Crie o primeiro grupo ou troque o filtro."
           >
-            <Button variante="neutro" onClick={() => d({ t: 'filtro-grupos', valor: 'Todos' })}>
-              Ver todos
-            </Button>
+            <Button onClick={() => setNovo(true)}>Criar grupo</Button>
+            {s.filtroGrupos !== 'Todos' && (
+              <Button variante="neutro" onClick={() => set('filtroGrupos', 'Todos')}>
+                Ver todos
+              </Button>
+            )}
           </Vazio>
         ) : (
           <div className="grid gap-3 px-4 dk:grid-cols-2 xl:grid-cols-3">
-            {lista.map((g) => (
-              <article
-                key={g.id}
-                className="flex flex-col overflow-hidden rounded-2xl bg-surface"
-              >
+            {filtrados.map((g) => (
+              <article key={g.id} className="flex flex-col overflow-hidden rounded-2xl bg-surface">
                 <button
                   onClick={() => go('grupo', { grupoId: g.id })}
                   className="relative block h-32 w-full cursor-pointer border-0 p-0"
@@ -101,103 +188,116 @@ export function Grupos() {
                 >
                   <Img src={g.cover} alt="" />
                   <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-line-strong bg-canvas/80 px-2.5 py-1 text-[11px] font-medium text-t2 backdrop-blur">
-                    {g.privacidade === 'Privado' && <Icon name="lock" size={12} />}
-                    {g.privacidade}
+                    {g.privacidade === 'PRIVATE' && <Icon name="lock" size={12} />}
+                    {g.privacidade === 'PRIVATE' ? 'Privado' : 'Público'}
                   </span>
-                  <span className="absolute -bottom-3.5 left-3">
-                    <AvatarStack urls={g.avatares.slice(0, 3)} size={28} />
-                  </span>
+                  {g.avatares.length > 0 && (
+                    <span className="absolute -bottom-3.5 left-3">
+                      <AvatarStack urls={g.avatares.slice(0, 3)} size={28} />
+                    </span>
+                  )}
                 </button>
 
                 <div className="flex flex-1 flex-col gap-2 px-4 pb-4 pt-6">
                   <h3 className="m-0 text-base font-semibold text-t1">{g.nome}</h3>
-                  <p className="clamp2 m-0 text-xs leading-relaxed text-t4">{g.sobre}</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-t3">
-                    <span className="flex items-center gap-1.5">
-                      <Icon name="nodes" size={14} />
-                      {g.grupos}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Icon name="users" size={14} />
-                      {g.membros}
-                    </span>
+                  {g.descricao && (
+                    <p className="clamp2 m-0 text-xs leading-relaxed text-t4">{g.descricao}</p>
+                  )}
+                  <span className="flex items-center gap-1.5 text-xs text-t3">
+                    <Icon name="users" size={14} />
+                    {g.membros} {g.membros === 1 ? 'membro' : 'membros'}
+                  </span>
+                  <div className="mt-1">
+                    <BotaoGrupo
+                      g={g}
+                      bloco
+                      onMudou={() => {
+                        carregar();
+                        void recarregar({ grupos: true, feed: true });
+                      }}
+                    />
                   </div>
-                  <Button
-                    bloco
-                    tamanho="sm"
-                    className="mt-1"
-                    variante={
-                      g.status === 'fora' && g.privacidade === 'Público'
-                        ? 'primario'
-                        : 'neutro'
-                    }
-                    onClick={() => {
-                      d({ t: 'grupo-status', grupoId: g.id });
-                      toast(
-                        g.status === 'participando'
-                          ? `Você saiu de ${g.nome}`
-                          : g.privacidade === 'Privado'
-                            ? 'Solicitação enviada'
-                            : `Você entrou em ${g.nome}`,
-                      );
-                    }}
-                  >
-                    {g.status === 'participando'
-                      ? 'Participando'
-                      : g.status === 'solicitado'
-                        ? 'Solicitado'
-                        : g.privacidade === 'Privado'
-                          ? 'Solicitar entrada'
-                          : 'Participar'}
-                  </Button>
                 </div>
               </article>
             ))}
           </div>
         )}
       </div>
+
+      {novo && (
+        <NovoGrupo
+          onFechar={() => setNovo(false)}
+          onCriado={() => {
+            carregar();
+            void recarregar({ grupos: true });
+          }}
+        />
+      )}
     </Shell>
   );
 }
 
 /* ── grupo aberto ────────────────────────────────────────────────────── */
 
+type GrupoDetalhado = Grupo & { membrosLista: User[]; posts: Post[] };
+
 export function GrupoDetalhe() {
-  const { s, d, rota, go, toast } = useApp();
-  const g = s.grupos.find((x) => x.id === rota.params?.grupoId) ?? s.grupos[0];
-  const posts = s.posts.filter((p) => p.meta.includes(g.nome));
-  const membros = ['joao', 'marina', 'elina', 'rafa', 'dani', 'teal'].map(userById);
-  const papeis: Record<string, string> = {
-    joao: 'Criador',
-    marina: 'Admin',
-    elina: 'Moderadora',
-  };
+  const { s, set, rota, go, recarregar } = useApp();
+  const acao = useAcao();
+  const [g, setG] = useState<GrupoDetalhado | null>(null);
+  const [erro, setErro] = useState('');
+
+  const id = rota.params?.grupoId;
+
+  const carregar = useCallback(() => {
+    if (!id) return;
+    api
+      .grupo(id)
+      .then((r) => {
+        if (!r) setErro('Grupo não encontrado ou sem acesso.');
+        else setG(r as GrupoDetalhado);
+      })
+      .catch((e) => setErro(e instanceof Error ? e.message : 'Erro ao carregar'));
+  }, [id]);
+
+  useEffect(carregar, [carregar]);
+
+  if (erro)
+    return (
+      <Shell>
+        <TopBar titulo="Grupo" />
+        <Vazio icone="lock" titulo="Sem acesso" texto={erro}>
+          <Button onClick={() => go('grupos')}>Ver grupos</Button>
+        </Vazio>
+      </Shell>
+    );
+
+  if (!g)
+    return (
+      <Shell>
+        <TopBar titulo="Grupo" />
+        <div className="flex flex-col gap-3 p-4">
+          <Skeleton className="h-44 w-full" />
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      </Shell>
+    );
+
+  const membro = g.status === 'ACTIVE';
 
   return (
     <Shell>
       <TopBar
         titulo={g.nome}
         acao={
-          <Button
-            tamanho="sm"
-            variante={g.status === 'fora' && g.privacidade === 'Público' ? 'primario' : 'neutro'}
-            onClick={() => {
-              d({ t: 'grupo-status', grupoId: g.id });
-              toast(
-                g.status === 'participando'
-                  ? `Você saiu de ${g.nome}`
-                  : g.privacidade === 'Privado'
-                    ? 'Solicitação enviada'
-                    : `Você entrou em ${g.nome}`,
-              );
+          <BotaoGrupo
+            g={g}
+            onMudou={() => {
+              carregar();
+              void recarregar({ grupos: true, feed: true });
             }}
-          >
-            {g.status === 'participando'
-              ? 'Participando'
-              : g.status === 'solicitado'
-                ? 'Solicitado'
-                : 'Participar'}
-          </Button>
+          />
         }
       />
 
@@ -210,45 +310,60 @@ export function GrupoDetalhe() {
         <div className="-mt-12 flex flex-col gap-3 px-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 py-1 text-xs text-t2">
-              {g.privacidade === 'Privado' && <Icon name="lock" size={12} />}
-              {g.privacidade}
+              {g.privacidade === 'PRIVATE' && <Icon name="lock" size={12} />}
+              {g.privacidade === 'PRIVATE' ? 'Privado' : 'Público'}
             </span>
-            <span
-              className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white"
-              style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}
-            >
-              {g.categoria}
-            </span>
+            {g.interesses.map((i) => (
+              <span
+                key={i}
+                className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white"
+                style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}
+              >
+                {i}
+              </span>
+            ))}
           </div>
 
           <h1 className="m-0 text-2xl font-bold tracking-tight text-t1">{g.nome}</h1>
-          <p className="m-0 text-sm leading-relaxed text-t3">{g.sobre}</p>
+          {g.descricao && (
+            <p className="m-0 text-sm leading-relaxed text-t3">{g.descricao}</p>
+          )}
 
           <div className="flex items-center gap-3">
-            <AvatarStack urls={g.avatares} size={32} borda="var(--color-canvas)" />
+            {g.avatares.length > 0 && (
+              <AvatarStack urls={g.avatares} size={32} borda="var(--color-canvas)" />
+            )}
             <span className="text-xs text-t4">
-              {g.membros} · {g.grupos}
+              {g.membros} {g.membros === 1 ? 'membro' : 'membros'}
             </span>
           </div>
+
+          {membro && (
+            <Button variante="neutro" onClick={() => go('criar', { grupoId: g.id })}>
+              <Icon name="plus" size={16} /> Publicar neste grupo
+            </Button>
+          )}
         </div>
 
         <Tabs
           itens={['Publicações', 'Membros', 'Sobre']}
           atual={s.abaGrupo}
-          onChange={(v) => d({ t: 'aba-grupo', valor: v })}
+          onChange={(v) => set('abaGrupo', v)}
         />
 
         {s.abaGrupo === 'Publicações' && (
           <div className="flex flex-col gap-3 px-4">
-            {posts.length ? (
-              posts.map((p) => <PostCard key={p.id} post={p} />)
+            {g.posts.length ? (
+              g.posts.map((p) => <PostCard key={p.id} post={p} />)
             ) : (
               <Vazio
                 icone="plus"
                 titulo="Nenhuma publicação ainda"
                 texto={`Seja a primeira pessoa a publicar em ${g.nome}.`}
               >
-                <Button onClick={() => go('criar', { grupo: g.nome })}>Publicar aqui</Button>
+                {membro && (
+                  <Button onClick={() => go('criar', { grupoId: g.id })}>Publicar aqui</Button>
+                )}
               </Vazio>
             )}
           </div>
@@ -256,31 +371,25 @@ export function GrupoDetalhe() {
 
         {s.abaGrupo === 'Membros' && (
           <ul className="m-0 flex list-none flex-col gap-2 px-4 p-0">
-            {membros.map((u) => (
-              <li
-                key={u.id}
-                className="flex items-center gap-3 rounded-2xl bg-surface p-2 pr-3"
-              >
+            {g.membrosLista.map((u) => (
+              <li key={u.id} className="flex items-center gap-3 rounded-2xl bg-surface p-2 pr-3">
                 <button
-                  onClick={() => go('perfil', { userId: u.id })}
+                  onClick={() => go('perfil', { handle: u.handle })}
                   className="cursor-pointer border-0 bg-transparent p-0"
                   aria-label={`Perfil de ${u.nome}`}
                 >
-                  <Avatar src={u.avatar} size={44} />
+                  <Avatar src={u.avatar} nome={u.nome} size={44} />
                 </button>
                 <div className="flex min-w-0 flex-1 flex-col">
                   <span className="one-line text-sm font-semibold text-t1">{u.nome}</span>
                   <span className="one-line text-xs text-t4">{u.handle}</span>
                 </div>
-                {papeis[u.id] && (
+                {u.contexto && (
                   <span
                     className="shrink-0 rounded-full px-3 py-1 text-xs font-medium text-white"
-                    style={{
-                      background: 'var(--accent-soft)',
-                      border: '1px solid var(--accent)',
-                    }}
+                    style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}
                   >
-                    {papeis[u.id]}
+                    {u.contexto}
                   </span>
                 )}
               </li>
@@ -292,26 +401,25 @@ export function GrupoDetalhe() {
           <div className="flex flex-col gap-4 px-4">
             <div className="rounded-2xl bg-surface p-4">
               <h3 className="m-0 mb-2 text-sm font-semibold text-t1">Descrição</h3>
-              <p className="m-0 text-sm leading-relaxed text-t3">{g.sobre}</p>
+              <p className="m-0 text-sm leading-relaxed text-t3">
+                {g.descricao || 'Este grupo ainda não tem descrição.'}
+              </p>
             </div>
-            <div className="rounded-2xl bg-surface p-4">
-              <h3 className="m-0 mb-2 text-sm font-semibold text-t1">Regras da casa</h3>
-              <ul className="m-0 flex list-disc flex-col gap-1.5 pl-5 text-sm leading-relaxed text-t3">
-                <li>Feedback honesto, sem grosseria.</li>
-                <li>Divulgação só na quinta-feira.</li>
-                <li>Cifra e áudio sempre com crédito.</li>
-              </ul>
-            </div>
-            <Button
-              variante="perigo"
-              bloco
-              onClick={() => {
-                d({ t: 'grupo-status', grupoId: g.id });
-                toast(`Você saiu de ${g.nome}`);
-              }}
-            >
-              Sair do grupo
-            </Button>
+            {membro && (
+              <Button
+                variante="perigo"
+                bloco
+                onClick={() =>
+                  acao(async () => {
+                    await api.participarGrupo(g.id);
+                    void recarregar({ grupos: true, feed: true });
+                    go('grupos');
+                  }, `Você saiu de ${g.nome}`)
+                }
+              >
+                Sair do grupo
+              </Button>
+            )}
           </div>
         )}
       </div>

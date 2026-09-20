@@ -1,13 +1,14 @@
-import { useApp } from '../../app/store';
-import { userById, type Comentario, type Grupo, type User } from '../../data/db';
+import { useApp, useAcao } from '../../app/store';
+import { api } from '../../lib/api';
+import type { Comentario, Grupo, Story, User } from '../../data/types';
 import { Avatar, AvatarStack, Button, Icon, Img } from '../ui';
 
 export { PostCard } from './PostCard';
 
 /* ── trilho de stories ───────────────────────────────────────────────── */
 
-export function StoriesRail() {
-  const { s, d, abrir, go } = useApp();
+export function StoriesRail({ stories }: { stories: Story[] }) {
+  const { s, abrir, go } = useApp();
 
   return (
     <section aria-label="Stories" className="shrink-0">
@@ -19,7 +20,11 @@ export function StoriesRail() {
           >
             <span className="flex h-38 w-26 items-center justify-center rounded-[20px] border border-dashed border-line-strong bg-surface">
               <span className="relative block h-11 w-11">
-                <Avatar src={s.perfil.avatar} size={44} />
+                <Avatar
+                  src={s.perfil?.avatar}
+                  nome={s.perfil?.nome ?? '?'}
+                  size={44}
+                />
                 <span
                   className="absolute -bottom-1 -right-1 flex h-5.5 w-5.5 items-center justify-center rounded-full border-2 border-surface text-white"
                   style={{ background: 'var(--accent)' }}
@@ -33,27 +38,25 @@ export function StoriesRail() {
             </span>
           </button>
 
-          {s.stories.map((st) => (
+          {stories.map((st) => (
             <button
               key={st.id}
-              onClick={() => {
-                d({ t: 'ver-story', storyId: st.id });
-                abrir('story', { storyId: st.id });
-              }}
+              onClick={() => abrir('story', { storyId: st.id })}
               className="flex w-26 shrink-0 cursor-pointer flex-col gap-2 border-0 bg-transparent p-0"
             >
               <span className="relative block h-38 w-26 overflow-hidden rounded-[20px] bg-surface">
-                <Img src={st.img} alt="" />
+                <Img src={st.img} alt={st.legenda} />
                 <span className="absolute bottom-2 left-1/2 -translate-x-1/2">
                   <Avatar
-                    src={userById(st.autorId).avatar}
+                    src={st.autor.avatar}
+                    nome={st.autor.nome}
                     size={40}
-                    ring={st.novo ? 'var(--accent)' : '#4A494E'}
+                    ring={st.visto ? '#4A494E' : 'var(--accent)'}
                   />
                 </span>
               </span>
               <span className="one-line block text-center text-xs text-t3">
-                {st.label}
+                {st.autor.handle.replace('@', '')}
               </span>
             </button>
           ))}
@@ -63,10 +66,10 @@ export function StoriesRail() {
   );
 }
 
-/* ── card de comunidade / grupo ──────────────────────────────────────── */
+/* ── card de comunidade (carrossel da home) ──────────────────────────── */
 
 export function ComunidadeCard({ g }: { g: Grupo }) {
-  const { go, toast } = useApp();
+  const { go } = useApp();
   return (
     <article className="flex w-42 shrink-0 flex-col overflow-hidden rounded-2xl bg-surface">
       <button
@@ -75,48 +78,74 @@ export function ComunidadeCard({ g }: { g: Grupo }) {
         aria-label={`Abrir ${g.nome}`}
       >
         <Img src={g.cover} alt="" />
-        <span className="absolute -bottom-3.5 left-3">
-          <AvatarStack urls={g.avatares.slice(0, 3)} size={28} />
-        </span>
+        {g.avatares.length > 0 && (
+          <span className="absolute -bottom-3.5 left-3">
+            <AvatarStack urls={g.avatares.slice(0, 3)} size={28} />
+          </span>
+        )}
       </button>
       <div className="flex flex-1 flex-col gap-1 px-3 pb-3 pt-5.5">
-        <div className="flex items-start gap-2">
-          <h3 className="clamp2 m-0 min-h-10 min-w-0 flex-1 text-base font-semibold break-words text-t1">
-            {g.nome}
-          </h3>
-          <button
-            onClick={() => toast('Link da comunidade copiado')}
-            aria-label="Compartilhar comunidade"
-            className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent text-t3"
-          >
-            <Icon name="share" size={18} />
-          </button>
-        </div>
-        <span className="flex items-center gap-2 text-xs text-t3">
-          <Icon name="nodes" size={16} />
-          {g.grupos}
-        </span>
+        <h3 className="clamp2 m-0 min-h-10 text-base font-semibold break-words text-t1">
+          {g.nome}
+        </h3>
         <span className="flex items-center gap-2 text-xs text-t3">
           <Icon name="users" size={16} />
-          {g.membros}
+          {g.membros} {g.membros === 1 ? 'membro' : 'membros'}
         </span>
       </div>
     </article>
   );
 }
 
-/** Linha de grupo usada em Grupos e na Busca. */
-export function GrupoLinha({ g, compacto }: { g: Grupo; compacto?: boolean }) {
-  const { go, d, toast } = useApp();
+/* ── botão de participar, reaproveitado em três telas ────────────────── */
+
+export function BotaoGrupo({
+  g,
+  bloco,
+  onMudou,
+}: {
+  g: Grupo;
+  bloco?: boolean;
+  onMudou?: () => void;
+}) {
+  const { toast } = useApp();
+  const acao = useAcao();
   const rotulo =
-    g.status === 'participando'
+    g.status === 'ACTIVE'
       ? 'Participando'
-      : g.status === 'solicitado'
+      : g.status === 'PENDING'
         ? 'Solicitado'
-        : g.privacidade === 'Privado'
-          ? 'Solicitar'
+        : g.privacidade === 'PRIVATE'
+          ? 'Solicitar entrada'
           : 'Participar';
 
+  return (
+    <Button
+      tamanho="sm"
+      bloco={bloco}
+      variante={g.status === null && g.privacidade === 'PUBLIC' ? 'primario' : 'neutro'}
+      onClick={() =>
+        acao(async () => {
+          const r = await api.participarGrupo(g.id);
+          toast(
+            r.status === 'ACTIVE'
+              ? `Você entrou em ${g.nome}`
+              : r.status === 'PENDING'
+                ? 'Solicitação enviada'
+                : `Você saiu de ${g.nome}`,
+          );
+          onMudou?.();
+        })
+      }
+    >
+      {rotulo}
+    </Button>
+  );
+}
+
+/** Linha de grupo usada em Grupos e na Busca. */
+export function GrupoLinha({ g, onMudou }: { g: Grupo; onMudou?: () => void }) {
+  const { go } = useApp();
   return (
     <li className="flex items-center gap-3 rounded-2xl bg-surface p-2 pr-3">
       <button
@@ -135,25 +164,11 @@ export function GrupoLinha({ g, compacto }: { g: Grupo; compacto?: boolean }) {
         </button>
         <span className="one-line flex items-center gap-2 text-xs text-t4">
           <Icon name="users" size={14} />
-          {compacto ? g.membros : `${g.membros} · ${g.privacidade}`}
+          {g.membros} {g.membros === 1 ? 'membro' : 'membros'} ·{' '}
+          {g.privacidade === 'PRIVATE' ? 'Privado' : 'Público'}
         </span>
       </div>
-      <Button
-        tamanho="sm"
-        variante={g.status === 'fora' && g.privacidade === 'Público' ? 'primario' : 'neutro'}
-        onClick={() => {
-          d({ t: 'grupo-status', grupoId: g.id });
-          toast(
-            g.status === 'participando'
-              ? `Você saiu de ${g.nome}`
-              : g.privacidade === 'Privado'
-                ? 'Solicitação enviada'
-                : `Você entrou em ${g.nome}`,
-          );
-        }}
-      >
-        {rotulo}
-      </Button>
+      <BotaoGrupo g={g} onMudou={onMudou} />
     </li>
   );
 }
@@ -162,26 +177,30 @@ export function GrupoLinha({ g, compacto }: { g: Grupo; compacto?: boolean }) {
 
 export function PessoaLinha({
   u,
-  acao = 'seguir',
+  segue,
+  acao: tipo = 'seguir',
+  onMudou,
 }: {
   u: User;
+  segue?: boolean;
   acao?: 'seguir' | 'mensagem';
+  onMudou?: () => void;
 }) {
-  const { s, d, go, toast } = useApp();
-  const segue = !!s.seguindo[u.id];
+  const { go, toast } = useApp();
+  const executar = useAcao();
 
   return (
     <li className="flex items-center gap-3 rounded-2xl bg-surface p-2 pr-3">
       <button
-        onClick={() => go('perfil', { userId: u.id })}
+        onClick={() => go('perfil', { handle: u.handle })}
         className="cursor-pointer border-0 bg-transparent p-0"
         aria-label={`Perfil de ${u.nome}`}
       >
-        <Avatar src={u.avatar} size={48} />
+        <Avatar src={u.avatar} nome={u.nome} size={48} />
       </button>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <button
-          onClick={() => go('perfil', { userId: u.id })}
+          onClick={() => go('perfil', { handle: u.handle })}
           className="one-line cursor-pointer border-0 bg-transparent p-0 text-left text-sm font-semibold text-t1"
         >
           {u.nome}
@@ -191,14 +210,17 @@ export function PessoaLinha({
           {u.contexto ? ` · ${u.contexto}` : ''}
         </span>
       </div>
-      {acao === 'seguir' ? (
+      {tipo === 'seguir' ? (
         <Button
           tamanho="sm"
           variante={segue ? 'neutro' : 'primario'}
-          onClick={() => {
-            d({ t: 'seguir', userId: u.id });
-            toast(segue ? `Deixou de seguir ${u.nome}` : `Seguindo ${u.nome}`);
-          }}
+          onClick={() =>
+            executar(async () => {
+              const r = await api.seguir(u.id);
+              toast(r.following ? `Seguindo ${u.nome}` : `Deixou de seguir ${u.nome}`);
+              onMudou?.();
+            })
+          }
         >
           {segue ? 'Seguindo' : 'Seguir'}
         </Button>
@@ -206,11 +228,12 @@ export function PessoaLinha({
         <Button
           tamanho="sm"
           variante="neutro"
-          onClick={() => {
-            d({ t: 'nova-conversa', userId: u.id });
-            const cv = s.conversas.find((c) => c.comId === u.id);
-            go('chat', { conversaId: cv?.id ?? '', userId: u.id });
-          }}
+          onClick={() =>
+            executar(async () => {
+              const id = await api.abrirConversa(u.id);
+              go('chat', { conversaId: id });
+            })
+          }
         >
           Mensagem
         </Button>
@@ -223,49 +246,37 @@ export function PessoaLinha({
 
 export function ComentarioItem({
   c,
-  postId,
+  onMudou,
 }: {
   c: Comentario;
-  postId: string;
+  onMudou?: () => void;
 }) {
-  const { d, go, toast } = useApp();
-  const autor = userById(c.autorId);
-  const resposta = !!c.respostaDe;
+  const { go } = useApp();
+  const acao = useAcao();
 
   return (
-    <li
-      className="flex gap-3"
-      style={{ marginLeft: resposta ? 48 : 0 }}
-    >
+    <li className="flex gap-3" style={{ marginLeft: c.resposta ? 48 : 0 }}>
       <button
-        onClick={() => go('perfil', { userId: autor.id })}
+        onClick={() => go('perfil', { handle: c.autor.handle })}
         className="cursor-pointer border-0 bg-transparent p-0"
-        aria-label={`Perfil de ${autor.nome}`}
+        aria-label={`Perfil de ${c.autor.nome}`}
       >
-        <Avatar src={autor.avatar} size={resposta ? 28 : 36} />
+        <Avatar src={c.autor.avatar} nome={c.autor.nome} size={c.resposta ? 28 : 36} />
       </button>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold text-t1">{autor.handle}</span>
+          <span className="text-sm font-semibold text-t1">{c.autor.handle}</span>
           <span className="text-xs text-t4">{c.tempo}</span>
           {c.autora && (
             <span className="rounded-full border border-line-strong px-2 py-0.5 text-[11px] text-t3">
-              autora
+              autor
             </span>
           )}
         </div>
         <p className="m-0 text-sm leading-relaxed break-words text-t2">{c.texto}</p>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => toast('Resposta ainda não implementada no mock')}
-            className="cursor-pointer border-0 bg-transparent p-0 text-xs font-medium text-t4"
-          >
-            Responder
-          </button>
-        </div>
       </div>
       <button
-        onClick={() => d({ t: 'curtir-comentario', postId, comentarioId: c.id })}
+        onClick={() => acao(async () => { await api.curtirComentario(c.id); onMudou?.(); })}
         aria-label={c.curtido ? 'Remover curtida' : 'Curtir comentário'}
         className="flex shrink-0 cursor-pointer flex-col items-center gap-0.5 border-0 bg-transparent p-0 text-xs"
         style={{ color: c.curtido ? 'var(--accent)' : '#858487' }}

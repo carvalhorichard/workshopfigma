@@ -1,54 +1,47 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '../app/store';
+import { api } from '../lib/api';
 import { Shell } from '../components/layout/Shell';
 import { GrupoLinha, PessoaLinha } from '../components/domain';
-import { Button, Chip, Icon, Vazio } from '../components/ui';
-import { BUSCAS_RECENTES, SUGESTOES_BUSCA, USERS } from '../data/db';
+import { Button, Chip, Icon, Skeleton, Vazio } from '../components/ui';
+import { SUGESTOES_BUSCA, type Grupo, type Post, type User } from '../data/types';
 
 const TIPOS = ['Tudo', 'Pessoas', 'Grupos', 'Publicações'];
 
 export function Buscar() {
-  const { s, d, go } = useApp();
+  const { s, set, go } = useApp();
   const [tipo, setTipo] = useState('Tudo');
-  const q = s.busca.trim().toLowerCase();
+  const [carregando, setCarregando] = useState(false);
+  const [r, setR] = useState<{ pessoas: User[]; grupos: Grupo[]; posts: Post[] }>({
+    pessoas: [],
+    grupos: [],
+    posts: [],
+  });
 
-  const pessoas = useMemo(
-    () =>
-      USERS.filter(
-        (u) =>
-          u.id !== 'eu' &&
-          (!q ||
-            u.nome.toLowerCase().includes(q) ||
-            u.handle.toLowerCase().includes(q) ||
-            (u.contexto ?? '').toLowerCase().includes(q)),
-      ),
-    [q],
-  );
+  // busca com atraso, para não disparar a cada tecla
+  useEffect(() => {
+    const q = s.busca.trim();
+    if (!q) {
+      setR({ pessoas: [], grupos: [], posts: [] });
+      return;
+    }
+    setCarregando(true);
+    const t = setTimeout(() => {
+      api
+        .buscar(q)
+        .then(setR)
+        .catch(() => setR({ pessoas: [], grupos: [], posts: [] }))
+        .finally(() => setCarregando(false));
+    }, 350);
+    return () => clearTimeout(t);
+  }, [s.busca]);
 
-  const grupos = useMemo(
-    () =>
-      s.grupos.filter(
-        (g) =>
-          !q ||
-          g.nome.toLowerCase().includes(q) ||
-          g.categoria.toLowerCase().includes(q) ||
-          g.sobre.toLowerCase().includes(q),
-      ),
-    [s.grupos, q],
-  );
+  async function refazer() {
+    if (s.busca.trim()) setR(await api.buscar(s.busca.trim()));
+  }
 
-  const posts = useMemo(
-    () =>
-      s.posts.filter(
-        (p) =>
-          !q ||
-          p.texto.toLowerCase().includes(q) ||
-          p.tags.join(' ').toLowerCase().includes(q),
-      ),
-    [s.posts, q],
-  );
-
-  const semResultado = q && !pessoas.length && !grupos.length && !posts.length;
+  const vazio =
+    s.busca.trim() && !carregando && !r.pessoas.length && !r.grupos.length && !r.posts.length;
   const mostra = (t: string) => tipo === 'Tudo' || tipo === t;
 
   return (
@@ -65,7 +58,7 @@ export function Buscar() {
               id="q"
               type="search"
               value={s.busca}
-              onChange={(e) => d({ t: 'busca', valor: e.target.value })}
+              onChange={(e) => set('busca', e.target.value)}
               placeholder="O que deseja fazer de bom hoje?"
               className="h-13 w-full min-w-0 rounded-xl border border-line bg-surface pl-12 pr-12 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
             />
@@ -74,7 +67,7 @@ export function Buscar() {
             </span>
             {s.busca && (
               <button
-                onClick={() => d({ t: 'busca', valor: '' })}
+                onClick={() => set('busca', '')}
                 aria-label="Limpar busca"
                 className="absolute right-1 top-1 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-t3"
               >
@@ -94,73 +87,80 @@ export function Buscar() {
           </div>
         </div>
 
-        {!q && (
-          <div className="rail w-full">
-            <div className="flex w-max gap-2 px-4">
-              {BUSCAS_RECENTES.map((r) => (
-                <Chip key={r} icone="clock" onClick={() => d({ t: 'busca', valor: r })}>
-                  {r}
+        {!s.busca.trim() && (
+          <section className="flex flex-col gap-3 px-4">
+            <h2 className="m-0 text-xl font-semibold text-t1">Comece por aqui</h2>
+            <div className="flex flex-wrap gap-2">
+              {SUGESTOES_BUSCA.map((t) => (
+                <Chip key={t} icone="search" onClick={() => set('busca', t)}>
+                  {t}
                 </Chip>
               ))}
             </div>
+            {s.sugestoes.length > 0 && (
+              <>
+                <h2 className="m-0 mt-3 text-xl font-semibold text-t1">Pessoas para seguir</h2>
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                  {s.sugestoes.map((u) => (
+                    <PessoaLinha key={u.id} u={u} />
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        )}
+
+        {carregando && (
+          <div className="flex flex-col gap-2 px-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 rounded-2xl" />
+            ))}
           </div>
         )}
 
-        {semResultado ? (
+        {vazio && (
           <>
             <Vazio
               icone="search"
               titulo={`Nenhum resultado para “${s.busca}”`}
               texto="Confira a escrita ou tente um termo mais amplo, como o instrumento ou o estilo."
             >
-              <Button variante="neutro" onClick={() => d({ t: 'busca', valor: '' })}>
+              <Button variante="neutro" onClick={() => set('busca', '')}>
                 Limpar busca
               </Button>
             </Vazio>
-
             <section className="flex flex-col gap-3 px-4">
               <h2 className="m-0 text-xl font-semibold text-t1">Tente por aqui</h2>
               <div className="flex flex-wrap gap-2">
                 {SUGESTOES_BUSCA.map((t) => (
-                  <Chip key={t} onClick={() => d({ t: 'busca', valor: t })}>
+                  <Chip key={t} onClick={() => set('busca', t)}>
                     {t}
                   </Chip>
                 ))}
               </div>
             </section>
-
-            <section className="flex flex-col gap-3 px-4">
-              <h2 className="m-0 text-xl font-semibold text-t1">Grupos em alta</h2>
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {s.grupos.slice(0, 2).map((g) => (
-                  <GrupoLinha key={g.id} g={g} compacto />
-                ))}
-              </ul>
-            </section>
           </>
-        ) : (
+        )}
+
+        {!carregando && !vazio && s.busca.trim() && (
           <div className="flex flex-col gap-5">
-            {mostra('Pessoas') && pessoas.length > 0 && (
+            {mostra('Pessoas') && r.pessoas.length > 0 && (
               <section className="flex flex-col gap-3 px-4">
-                <div className="flex items-baseline gap-3">
-                  <h2 className="m-0 min-w-0 text-xl font-semibold text-t1">Pessoas</h2>
-                  <div className="flex-1" />
-                  <button
-                    onClick={() => setTipo('Pessoas')}
-                    className="shrink-0 cursor-pointer border-0 bg-transparent p-0 text-sm font-medium text-brand-200"
-                  >
-                    Ver todas
-                  </button>
-                </div>
+                <h2 className="m-0 text-xl font-semibold text-t1">Pessoas</h2>
                 <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                  {(tipo === 'Tudo' ? pessoas.slice(0, 4) : pessoas).map((u) => (
-                    <PessoaLinha key={u.id} u={u} />
+                  {(tipo === 'Tudo' ? r.pessoas.slice(0, 4) : r.pessoas).map((u) => (
+                    <PessoaLinha
+                      key={u.id}
+                      u={u}
+                      segue={u.contexto === 'Você segue'}
+                      onMudou={refazer}
+                    />
                   ))}
                 </ul>
               </section>
             )}
 
-            {mostra('Grupos') && grupos.length > 0 && (
+            {mostra('Grupos') && r.grupos.length > 0 && (
               <section className="flex flex-col gap-3 px-4">
                 <div className="flex items-baseline gap-3">
                   <h2 className="m-0 min-w-0 text-xl font-semibold text-t1">Grupos</h2>
@@ -173,28 +173,30 @@ export function Buscar() {
                   </button>
                 </div>
                 <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                  {(tipo === 'Tudo' ? grupos.slice(0, 4) : grupos).map((g) => (
-                    <GrupoLinha key={g.id} g={g} />
+                  {(tipo === 'Tudo' ? r.grupos.slice(0, 4) : r.grupos).map((g) => (
+                    <GrupoLinha key={g.id} g={g} onMudou={refazer} />
                   ))}
                 </ul>
               </section>
             )}
 
-            {mostra('Publicações') && posts.length > 0 && (
+            {mostra('Publicações') && r.posts.length > 0 && (
               <section className="flex flex-col gap-3 px-4">
                 <h2 className="m-0 text-xl font-semibold text-t1">Publicações</h2>
                 <div className="grid grid-cols-3 gap-1">
-                  {posts.map((p) => (
+                  {r.posts.map((p) => (
                     <button
                       key={p.id}
                       onClick={() => go('post', { postId: p.id })}
                       className="aspect-square cursor-pointer overflow-hidden rounded-lg border-0 bg-elevated p-0"
                     >
-                      <img
-                        src={p.media}
-                        alt={p.mediaAlt}
-                        className="h-full w-full object-cover"
-                      />
+                      {p.media ? (
+                        <img src={p.media} alt={p.mediaAlt} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="clamp2 block p-2 text-left text-xs text-t3">
+                          {p.texto}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>

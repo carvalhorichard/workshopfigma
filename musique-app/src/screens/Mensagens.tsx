@@ -1,52 +1,34 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../app/store';
+import { api } from '../lib/api';
 import { Shell } from '../components/layout/Shell';
 import { PessoaLinha } from '../components/domain';
-import { Avatar, Button, Icon, IconButton, Vazio } from '../components/ui';
-import { userById, type Conversa } from '../data/db';
+import { Avatar, Button, Icon, IconButton, Skeleton, Vazio } from '../components/ui';
+import type { Conversa, Mensagem } from '../data/types';
 
-function LinhaConversa({ c, ativa }: { c: Conversa; ativa?: boolean }) {
-  const { d, go } = useApp();
-  const u = userById(c.comId);
+function LinhaConversa({ c, onAbrir }: { c: Conversa; onAbrir: () => void }) {
   const naoLida = c.naoLidas > 0;
-
   return (
     <li>
       <button
-        onClick={() => {
-          d({ t: 'ler-conversa', conversaId: c.id });
-          go('chat', { conversaId: c.id });
-        }}
+        onClick={onAbrir}
         className={`flex w-full cursor-pointer items-center gap-3 rounded-2xl border-0 p-2 pr-3 text-left transition-colors hover:bg-elevated ${
-          ativa ? 'bg-elevated' : naoLida ? 'bg-surface' : 'bg-transparent'
+          naoLida ? 'bg-surface' : 'bg-transparent'
         }`}
       >
-        <span className="relative shrink-0">
-          <Avatar src={u.avatar} size={48} />
-          {u.online && (
-            <span
-              className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-canvas"
-              style={{ background: 'var(--color-ok)' }}
-            />
-          )}
-        </span>
+        <Avatar src={c.com?.avatar} nome={c.com?.nome ?? '?'} size={48} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span
             className={`one-line block text-sm text-t1 ${naoLida ? 'font-semibold' : 'font-medium'}`}
           >
-            {u.nome}
+            {c.com?.nome ?? 'Conversa'}
           </span>
-          <span
-            className={`one-line block text-xs ${naoLida ? 'text-t2' : 'text-t4'}`}
-          >
+          <span className={`one-line block text-xs ${naoLida ? 'text-t2' : 'text-t4'}`}>
             {c.preview}
           </span>
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1">
-          <span
-            className="text-xs"
-            style={{ color: naoLida ? 'var(--accent)' : '#626166' }}
-          >
+          <span className="text-xs" style={{ color: naoLida ? 'var(--accent)' : '#626166' }}>
             {c.hora}
           </span>
           {naoLida && (
@@ -64,12 +46,12 @@ function LinhaConversa({ c, ativa }: { c: Conversa; ativa?: boolean }) {
 }
 
 export function Mensagens() {
-  const { s, rota, go, toast } = useApp();
+  const { s, go, recarregar } = useApp();
   const [q, setQ] = useState('');
+
   const conversas = s.conversas.filter((c) =>
-    userById(c.comId).nome.toLowerCase().includes(q.toLowerCase()),
+    (c.com?.nome ?? '').toLowerCase().includes(q.toLowerCase()),
   );
-  const ativa = rota.params?.conversaId;
 
   return (
     <Shell>
@@ -79,49 +61,56 @@ export function Mensagens() {
             <h1 className="m-0 min-w-0 flex-1 text-2xl font-bold tracking-tight text-t1">
               Mensagens
             </h1>
-            <IconButton
-              name="plus"
-              label="Nova conversa"
-              onClick={() => toast('Escolha alguém da lista abaixo para começar')}
-            />
+            <IconButton name="search" label="Buscar pessoas" onClick={() => go('buscar')} />
           </div>
-          <div className="relative">
-            <input
-              type="search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar conversa"
-              aria-label="Buscar conversa"
-              className="h-12 w-full rounded-xl border border-line bg-surface pl-11 pr-4 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
-            />
-            <span className="pointer-events-none absolute left-0 top-0 flex h-12 w-11 items-center justify-center text-t3">
-              <Icon name="search" size={18} />
-            </span>
-          </div>
+          {s.conversas.length > 0 && (
+            <div className="relative">
+              <input
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Buscar conversa"
+                aria-label="Buscar conversa"
+                className="h-12 w-full rounded-xl border border-line bg-surface pl-11 pr-4 text-base text-t1 placeholder:text-t4 outline-none focus-visible:border-brand-300"
+              />
+              <span className="pointer-events-none absolute left-0 top-0 flex h-12 w-11 items-center justify-center text-t3">
+                <Icon name="search" size={18} />
+              </span>
+            </div>
+          )}
         </div>
 
-        {conversas.length === 0 ? (
+        {s.conversas.length === 0 ? (
           <>
             <Vazio
               icone="chat"
               titulo="Nenhuma conversa ainda"
-              texto="Combine um ensaio, troque uma cifra, mande aquele disco. Comece por alguém do seu grupo."
+              texto="Combine um ensaio, troque uma cifra, mande aquele disco. Comece por alguém que você segue."
             >
-              <Button onClick={() => go('buscar')}>Nova conversa</Button>
+              <Button onClick={() => go('buscar')}>Encontrar pessoas</Button>
             </Vazio>
-            <section className="flex flex-col gap-3 px-4">
-              <h2 className="m-0 text-xl font-semibold text-t1">Do seu grupo</h2>
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {['joao', 'elina', 'marina'].map(userById).map((u) => (
-                  <PessoaLinha key={u.id} u={u} acao="mensagem" />
-                ))}
-              </ul>
-            </section>
+            {s.sugestoes.length > 0 && (
+              <section className="flex flex-col gap-3 px-4">
+                <h2 className="m-0 text-xl font-semibold text-t1">Pessoas no Musique</h2>
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                  {s.sugestoes.slice(0, 5).map((u) => (
+                    <PessoaLinha key={u.id} u={u} acao="mensagem" />
+                  ))}
+                </ul>
+              </section>
+            )}
           </>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-1 px-2 p-0">
             {conversas.map((c) => (
-              <LinhaConversa key={c.id} c={c} ativa={c.id === ativa} />
+              <LinhaConversa
+                key={c.id}
+                c={c}
+                onAbrir={() => {
+                  void api.lerConversa(c.id).then(() => recarregar({ conversas: true }));
+                  go('chat', { conversaId: c.id });
+                }}
+              />
             ))}
           </ul>
         )}
@@ -133,30 +122,43 @@ export function Mensagens() {
 /* ── chat ────────────────────────────────────────────────────────────── */
 
 export function Chat() {
-  const { s, d, rota, back, go, toast } = useApp();
-  const conversa =
-    s.conversas.find((c) => c.id === rota.params?.conversaId) ??
-    s.conversas.find((c) => c.comId === rota.params?.userId) ??
-    s.conversas[0];
-  const u = userById(conversa.comId);
+  const { s, rota, back, go, recarregar } = useApp();
+  const id = rota.params?.conversaId ?? '';
+  const conversa = s.conversas.find((c) => c.id === id);
+  const [msgs, setMsgs] = useState<Mensagem[] | null>(null);
   const [rascunho, setRascunho] = useState('');
+  const [enviando, setEnviando] = useState(false);
   const fim = useRef<HTMLDivElement>(null);
+
+  const carregar = useCallback(() => {
+    if (!id) return;
+    api.mensagens(id).then(setMsgs).catch(() => setMsgs([]));
+  }, [id]);
+
+  useEffect(carregar, [carregar]);
 
   useEffect(() => {
     fim.current?.scrollIntoView({ block: 'end' });
-  }, [conversa.mensagens.length]);
+  }, [msgs?.length]);
 
-  useEffect(() => {
-    if (conversa.naoLidas) d({ t: 'ler-conversa', conversaId: conversa.id });
-  }, [conversa.id, conversa.naoLidas, d]);
-
-  function enviar(e: React.FormEvent) {
+  async function enviar(e: React.FormEvent) {
     e.preventDefault();
     const texto = rascunho.trim();
-    if (!texto) return;
-    d({ t: 'enviar', conversaId: conversa.id, texto });
+    if (!texto || enviando) return;
+    setEnviando(true);
     setRascunho('');
+    try {
+      await api.enviarMensagem(id, texto);
+      carregar();
+      void recarregar({ conversas: true });
+    } catch {
+      setRascunho(texto);
+    } finally {
+      setEnviando(false);
+    }
   }
+
+  const u = conversa?.com;
 
   return (
     <Shell semNav>
@@ -170,62 +172,55 @@ export function Chat() {
             <Icon name="back" size={22} stroke={1.8} />
           </button>
           <button
-            onClick={() => go('perfil', { userId: u.id })}
+            onClick={() => u && go('perfil', { handle: u.handle })}
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 border-0 bg-transparent p-0 text-left"
           >
-            <Avatar src={u.avatar} size={40} />
+            <Avatar src={u?.avatar} nome={u?.nome ?? '?'} size={40} />
             <span className="min-w-0">
               <span className="one-line block text-sm font-semibold text-t1">
-                {u.nome}
+                {u?.nome ?? 'Conversa'}
               </span>
-              <span className="block text-xs" style={{ color: u.online ? 'var(--color-ok)' : '#858487' }}>
-                {u.online ? 'online' : 'visto por último há 2 h'}
-              </span>
+              <span className="block text-xs text-t4">{u?.handle}</span>
             </span>
           </button>
-          <IconButton
-            name="more"
-            label="Opções da conversa"
-            size={20}
-            onClick={() => toast('Opções da conversa entram na próxima etapa')}
-          />
         </header>
 
         <div className="scroll-y flex min-h-0 flex-1 flex-col gap-2 p-4 dk:mx-auto dk:w-full dk:max-w-3xl">
-          <div className="mx-auto rounded-full bg-surface px-3 py-1 text-xs text-t4">
-            Hoje
-          </div>
-          {conversa.mensagens.length === 0 && (
+          {msgs === null ? (
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className={`h-12 w-48 ${i % 2 ? 'self-end' : ''}`} />
+              ))}
+            </div>
+          ) : msgs.length === 0 ? (
             <Vazio
               icone="chat"
-              titulo={`Diga oi para ${u.nome}`}
+              titulo={`Diga oi para ${u?.nome ?? 'essa pessoa'}`}
               texto="Ainda não há mensagens nesta conversa."
             />
-          )}
-          {conversa.mensagens.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${m.minha ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className="max-w-[78%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed break-words"
-                style={{
-                  background: m.minha ? 'var(--accent)' : 'var(--color-surface)',
-                  color: m.minha ? '#fff' : 'var(--color-t2)',
-                  borderBottomRightRadius: m.minha ? 4 : 16,
-                  borderBottomLeftRadius: m.minha ? 16 : 4,
-                }}
-              >
-                {m.texto}
-                <span
-                  className="mt-1 block text-right text-[11px]"
-                  style={{ color: m.minha ? 'rgba(255,255,255,.72)' : '#858487' }}
+          ) : (
+            msgs.map((m) => (
+              <div key={m.id} className={`flex ${m.minha ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className="max-w-[78%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed break-words"
+                  style={{
+                    background: m.minha ? 'var(--accent)' : 'var(--color-surface)',
+                    color: m.minha ? '#fff' : 'var(--color-t2)',
+                    borderBottomRightRadius: m.minha ? 4 : 16,
+                    borderBottomLeftRadius: m.minha ? 16 : 4,
+                  }}
                 >
-                  {m.hora}
-                </span>
+                  {m.texto}
+                  <span
+                    className="mt-1 block text-right text-[11px]"
+                    style={{ color: m.minha ? 'rgba(255,255,255,.72)' : '#858487' }}
+                  >
+                    {m.hora}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
           <div ref={fim} />
         </div>
 
@@ -242,7 +237,7 @@ export function Chat() {
           />
           <button
             type="submit"
-            disabled={!rascunho.trim()}
+            disabled={!rascunho.trim() || enviando}
             aria-label="Enviar"
             className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 text-white disabled:opacity-40"
             style={{ background: 'var(--accent)' }}

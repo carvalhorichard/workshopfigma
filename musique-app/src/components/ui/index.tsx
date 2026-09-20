@@ -5,7 +5,7 @@ import {
   type ButtonHTMLAttributes,
   type ReactNode,
 } from 'react';
-import { FALLBACK } from '../../data/images';
+import { FALLBACK, avatarPadrao } from '../../data/images';
 import { useApp } from '../../app/store';
 import { Icon, type IconName } from './Icon';
 
@@ -20,14 +20,14 @@ export function Img({
   className = '',
   loading = 'lazy',
 }: {
-  src: string;
+  src: string | null | undefined;
   alt?: string;
   className?: string;
   loading?: 'lazy' | 'eager';
 }) {
   return (
     <img
-      src={src}
+      src={src || FALLBACK}
       alt={alt}
       loading={loading}
       className={`h-full w-full object-cover ${className}`}
@@ -42,12 +42,15 @@ export function Img({
 export function Avatar({
   src,
   alt = '',
+  nome = '?',
   size = 40,
   ring,
   className = '',
 }: {
-  src: string;
+  src: string | null | undefined;
   alt?: string;
+  /** usado para desenhar a inicial quando ainda não há foto */
+  nome?: string;
   size?: number;
   ring?: string;
   className?: string;
@@ -61,7 +64,7 @@ export function Avatar({
         border: ring ? `2px solid ${ring}` : undefined,
       }}
     >
-      <Img src={src} alt={alt} />
+      <Img src={src || avatarPadrao(nome)} alt={alt} />
     </span>
   );
 }
@@ -72,7 +75,7 @@ export function AvatarStack({
   size = 26,
   borda = 'var(--color-surface)',
 }: {
-  urls: string[];
+  urls: (string | null)[];
   size?: number;
   borda?: string;
 }) {

@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useApp } from '../app/store';
-import { Button, Campo, Icon, Img, entradaCls } from '../components/ui';
-import { img } from '../data/images';
+import { auth } from '../lib/api';
+import { Button, Campo, Icon, entradaCls } from '../components/ui';
 
-const CAPA = img('aa4851cf0928a68badd254199ce10193', 1400);
-
-/** Moldura comum: imagem à esquerda no desktop, capa no topo no mobile. */
+/** Moldura comum: painel à esquerda no desktop, topo no mobile. */
 function Moldura({
   children,
   titulo,
@@ -17,27 +15,29 @@ function Moldura({
 }) {
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-canvas">
-      <div className="relative hidden flex-1 dk:block">
-        <Img src={CAPA} alt="Gramofone dourado em uma oficina" loading="eager" />
-        <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/20 to-transparent" />
-        <p className="absolute bottom-10 left-10 right-10 m-0 max-w-md text-2xl font-semibold leading-snug text-t1">
-          A rede das pessoas que tocam, gravam e ouvem junto.
-        </p>
+      <div className="relative hidden flex-1 dk:flex dk:items-end">
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(120% 100% at 20% 0%, var(--accent-soft) 0%, transparent 55%), linear-gradient(160deg, #242326 0%, #19181B 60%)',
+          }}
+        />
+        <div className="relative p-10">
+          <span className="text-3xl font-bold tracking-tight text-t1">Musique</span>
+          <p className="m-0 mt-3 max-w-md text-xl font-medium leading-snug text-t2">
+            A rede das pessoas que tocam, gravam e ouvem junto.
+          </p>
+        </div>
       </div>
 
       <div className="scroll-y flex w-full flex-col dk:w-[480px] dk:shrink-0 dk:border-l dk:border-elevated">
-        <div className="safe-t mx-auto flex w-full max-w-md flex-1 flex-col gap-6 p-4 dk:justify-center dk:p-10">
-          <div className="relative h-58 w-full shrink-0 overflow-hidden rounded-[20px] bg-surface dk:hidden">
-            <Img src={CAPA} alt="Gramofone dourado em uma oficina" loading="eager" />
-          </div>
-
+        <div className="safe-t mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 p-6 dk:p-10">
           <div className="flex flex-col gap-2">
             <h1 className="m-0 text-3xl font-bold tracking-tight text-t1">{titulo}</h1>
-            <p className="m-0 max-w-[34ch] text-sm leading-relaxed text-t3">
-              {subtitulo}
-            </p>
+            <p className="m-0 max-w-[34ch] text-sm leading-relaxed text-t3">{subtitulo}</p>
           </div>
-
           {children}
         </div>
       </div>
@@ -46,32 +46,47 @@ function Moldura({
 }
 
 export function Login() {
-  const { d, go, toast } = useApp();
-  const [email, setEmail] = useState('richard@email.com');
-  const [senha, setSenha] = useState('musique2026');
+  const { go, toast } = useApp();
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
+  const [ocupado, setOcupado] = useState(false);
 
-  function entrar(e: React.FormEvent) {
+  async function entrar(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.includes('@') || senha.length < 6) {
-      setErro('Confira o e-mail e a senha (mínimo 6 caracteres).');
+    setErro('');
+    setOcupado(true);
+    try {
+      await auth.entrar(email.trim(), senha);
+      // o onAuthStateChange do store leva para a Home
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Não foi possível entrar.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function recuperar() {
+    if (!email.trim()) {
+      setErro('Escreva seu e-mail para receber o link de recuperação.');
       return;
     }
-    setErro('');
-    d({ t: 'entrar' });
-    toast('Bem-vindo de volta ao Musique');
+    try {
+      await auth.recuperar(email.trim());
+      toast('Link de recuperação enviado para seu e-mail');
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Não deu para enviar o link.');
+    }
   }
 
   return (
-    <Moldura
-      titulo="Musique"
-      subtitulo="Bem-vindo de volta. Compartilhe um pouco do seu dia."
-    >
+    <Moldura titulo="Musique" subtitulo="Bem-vindo de volta. Compartilhe um pouco do seu dia.">
       <form onSubmit={entrar} className="flex flex-col gap-3">
         <Campo label="E-mail">
           <input
             type="email"
             autoComplete="email"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="voce@email.com"
@@ -82,6 +97,7 @@ export function Login() {
           <input
             type="password"
             autoComplete="current-password"
+            required
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             placeholder="••••••••"
@@ -89,27 +105,18 @@ export function Login() {
           />
         </Campo>
 
-        <div className="flex min-h-11 flex-wrap items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-sm text-t2">
-            <input
-              type="checkbox"
-              defaultChecked
-              className="h-5 w-5"
-              style={{ accentColor: 'var(--accent)' }}
-            />
-            Lembrar minha senha
-          </label>
+        <div className="flex min-h-11 items-center justify-end">
           <button
             type="button"
-            onClick={() => toast('Enviamos um link de recuperação para seu e-mail')}
+            onClick={recuperar}
             className="cursor-pointer border-0 bg-transparent p-0 text-sm font-medium text-brand-200"
           >
             Esqueci minha senha
           </button>
         </div>
 
-        <Button type="submit" tamanho="lg" bloco className="mt-1">
-          Entrar no Musique
+        <Button type="submit" tamanho="lg" bloco disabled={ocupado}>
+          {ocupado ? 'Entrando…' : 'Entrar no Musique'}
         </Button>
       </form>
 
@@ -130,35 +137,50 @@ export function Login() {
   );
 }
 
-const CAMPOS = [
-  { id: 'nome', label: 'Nome', type: 'text', placeholder: 'Como as pessoas te chamam', hint: '' },
-  { id: 'user', label: 'Usuário', type: 'text', placeholder: '@seunome', hint: 'Seu @ é único e aparece nas publicações.' },
-  { id: 'email', label: 'E-mail', type: 'email', placeholder: 'voce@email.com', hint: '' },
-  { id: 'senha', label: 'Senha', type: 'password', placeholder: '••••••••', hint: 'Mínimo de 8 caracteres.' },
-  { id: 'senha2', label: 'Confirmar senha', type: 'password', placeholder: '••••••••', hint: '' },
-] as const;
-
 export function Cadastro() {
-  const { d, back, toast } = useApp();
-  const [v, setV] = useState<Record<string, string>>({});
+  const { back, toast } = useApp();
+  const [v, setV] = useState({ nome: '', user: '', email: '', senha: '', senha2: '' });
   const [aceito, setAceito] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
+  const [ocupado, setOcupado] = useState(false);
 
-  function criar(e: React.FormEvent) {
+  const campo = (k: keyof typeof v) => ({
+    value: v[k],
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+      setV({ ...v, [k]: e.target.value }),
+  });
+
+  async function criar(e: React.FormEvent) {
     e.preventDefault();
     const err: Record<string, string> = {};
-    if (!v.nome?.trim()) err.nome = 'Diga seu nome.';
-    if (!v.user?.trim()) err.user = 'Escolha um @.';
-    if (!v.email?.includes('@')) err.email = 'E-mail inválido.';
-    if ((v.senha ?? '').length < 8) err.senha = 'Mínimo de 8 caracteres.';
+    if (!v.nome.trim()) err.nome = 'Diga seu nome.';
+    if (!/^[a-z0-9._]{3,30}$/.test(v.user.trim().toLowerCase()))
+      err.user = 'Use 3 a 30 caracteres: letras minúsculas, números, ponto ou _.';
+    if (!v.email.includes('@')) err.email = 'E-mail inválido.';
+    if (v.senha.length < 6) err.senha = 'Mínimo de 6 caracteres.';
     if (v.senha !== v.senha2) err.senha2 = 'As senhas não batem.';
     if (!aceito) err.termos = 'É preciso aceitar os termos.';
     setErros(err);
     if (Object.keys(err).length) return;
 
-    d({ t: 'salvar-perfil', dados: { nome: v.nome, handle: `@${v.user.replace('@', '')}` } });
-    d({ t: 'entrar' });
-    toast('Conta criada. Escolha suas comunidades!');
+    setOcupado(true);
+    try {
+      const { precisaConfirmar } = await auth.cadastrar(
+        v.email.trim(),
+        v.senha,
+        v.nome.trim(),
+        v.user.trim().toLowerCase(),
+      );
+      if (precisaConfirmar) {
+        toast('Conta criada! Confirme o e-mail para entrar.');
+        back();
+      }
+      // com confirmação desligada, o store já leva para a Home
+    } catch (err) {
+      setErros({ email: err instanceof Error ? err.message : 'Não deu para criar a conta.' });
+    } finally {
+      setOcupado(false);
+    }
   }
 
   return (
@@ -167,17 +189,41 @@ export function Cadastro() {
       subtitulo="Leva menos de um minuto. Depois é só escolher suas comunidades."
     >
       <form onSubmit={criar} className="flex flex-col gap-3">
-        {CAMPOS.map((f) => (
-          <Campo key={f.id} label={f.label} hint={f.hint} erro={erros[f.id]}>
+        <Campo label="Nome" erro={erros.nome}>
+          <input {...campo('nome')} placeholder="Como as pessoas te chamam" className={entradaCls} />
+        </Campo>
+
+        <Campo
+          label="Usuário"
+          hint="Seu @ é único e aparece nas publicações."
+          erro={erros.user}
+        >
+          <div className="relative">
+            <span className="pointer-events-none absolute left-4 top-0 flex h-13 items-center text-base text-t4">
+              @
+            </span>
             <input
-              type={f.type}
-              placeholder={f.placeholder}
-              value={v[f.id] ?? ''}
-              onChange={(e) => setV({ ...v, [f.id]: e.target.value })}
-              className={entradaCls}
+              value={v.user}
+              onChange={(e) =>
+                setV({ ...v, user: e.target.value.replace(/[^a-zA-Z0-9._]/g, '').toLowerCase() })
+              }
+              placeholder="seunome"
+              className={`${entradaCls} pl-9`}
             />
-          </Campo>
-        ))}
+          </div>
+        </Campo>
+
+        <Campo label="E-mail" erro={erros.email}>
+          <input {...campo('email')} type="email" placeholder="voce@email.com" className={entradaCls} />
+        </Campo>
+
+        <Campo label="Senha" hint="Mínimo de 6 caracteres." erro={erros.senha}>
+          <input {...campo('senha')} type="password" placeholder="••••••••" className={entradaCls} />
+        </Campo>
+
+        <Campo label="Confirmar senha" erro={erros.senha2}>
+          <input {...campo('senha2')} type="password" placeholder="••••••••" className={entradaCls} />
+        </Campo>
 
         <label className="flex items-start gap-3 py-1 text-sm leading-relaxed text-t2">
           <input
@@ -194,8 +240,8 @@ export function Cadastro() {
         </label>
         {erros.termos && <span className="text-xs text-danger">{erros.termos}</span>}
 
-        <Button type="submit" tamanho="lg" bloco>
-          Criar minha conta
+        <Button type="submit" tamanho="lg" bloco disabled={ocupado}>
+          {ocupado ? 'Criando…' : 'Criar minha conta'}
         </Button>
       </form>
 
